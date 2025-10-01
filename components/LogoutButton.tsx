@@ -1,0 +1,33 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
+
+export default function LogoutButton() {
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      onClick={async () => {
+        setLoading(true);
+        try {
+          await supabase.auth.signOut();
+          router.replace("/signin");
+        } finally {
+          setLoading(false);
+        }
+      }}
+      className="h-[30px] rounded-[5px] bg-[#FCF9F5] border border-[#171717] [border-width:0.5px] px-3 py-0 text-[10px]"
+    >
+      {loading ? "Signing out..." : "Logout"}
+    </Button>
+  );
+}
+
+

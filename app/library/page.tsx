@@ -8,6 +8,7 @@ import Image from "next/image";
 import { useState } from "react";
 import Nango from "@nangohq/frontend";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
 
@@ -25,9 +26,75 @@ export default function LibraryPage() {
   const [substackImporting, setSubstackImporting] = useState(false);
   const [substackImportMessage, setSubstackImportMessage] = useState("");
   const [slackConnecting, setSlackConnecting] = useState(false);
+  const [notionConnecting, setNotionConnecting] = useState(false);
 
   function openModal() {
     setIsModalOpen(true);
+  }
+
+  async function handleNotionConnect() {
+    try {
+      setNotionConnecting(true);
+      const supabase = createSupabaseBrowserClient();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      const token = session?.access_token;
+      if (!token) throw new Error("You must be logged in");
+
+      const res = await fetch("/api/nango/connect-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ providerConfigKey: 'notion' }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Failed to create connect session");
+
+      const nango = new Nango({ connectSessionToken: json.token });
+      nango.openConnectUI({
+        onEvent: async (event: any) => {
+          if (event?.type === "connect") {
+            const { connectionId, providerConfigKey } = event.payload || {};
+            if (connectionId) {
+              await fetch("/api/nango/save-connection", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ connectionId, providerConfigKey: providerConfigKey || 'notion' }),
+              });
+
+              try {
+                const resp = await fetch("/api/notion/import", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({
+                    userId: session.user.id,
+                    connectionId,
+                    providerConfigKey: providerConfigKey || 'notion',
+                  }),
+                });
+                if (!resp.ok) {
+                  console.error('Failed to import Notion content:', await resp.text());
+                }
+              } catch (error) {
+                console.error('Error importing Notion content:', error);
+              }
+            }
+          }
+        },
+      });
+    } catch (e) {
+      // no-op UI error handling for now
+    } finally {
+      setNotionConnecting(false);
+    }
   }
 
   function closeModal() {
@@ -235,13 +302,73 @@ export default function LibraryPage() {
               </Button>
             </div>
             {activeTab === "context" && (
-              <Button
-                type="button"
-                onClick={openAddContext}
-                className="h-[27px] rounded-[5px] bg-[#A4D6CB] text-[#0D1717] px-3 py-0 text-[10px] cursor-pointer"
-              >
-                Add +
-              </Button>
+              <div className="flex items-center gap-2">
+                <input
+                  id="file-input"
+                  type="file"
+                  multiple
+                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const inputEl = e.currentTarget as HTMLInputElement
+                    const files = Array.from(inputEl.files || [])
+                    if (!files.length) return
+                    try {
+                      const toastId = toast.loading('Uploading...')
+                      const supabase = createSupabaseBrowserClient();
+                      const { data: { session }, error } = await supabase.auth.getSession();
+                      if (error) throw error;
+                      const token = session?.access_token;
+                      if (!token) throw new Error("You must be logged in");
+
+                      const fd = new FormData();
+                      for (const f of files) fd.append('files', f);
+
+                      const res = await fetch('/api/upload-files', {
+                        method: 'POST',
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                        },
+                        body: fd,
+                      });
+
+                      const json = await res.json();
+                      if (!res.ok) {
+                        toast.error(json?.error || 'Upload failed', { id: toastId });
+                      } else {
+                        if (json.inserted > 0) {
+                          toast.success(`Uploaded ${json.inserted}/${json.total} file(s)`, { id: toastId });
+                        }
+                        const failed = (json.details || []).filter((d: any) => !d.ok);
+                        if (failed.length) {
+                          toast.message('Some files failed', {
+                            description: failed.map((f: any) => `${f.name}: ${f.message || 'failed'}`).join('\n')
+                          });
+                        }
+                      }
+                    } catch (err: any) {
+                      toast.error(err?.message || 'Upload failed');
+                    } finally {
+                      // no global dismiss; success/error used the same id above
+                      if (inputEl) inputEl.value = '';
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  onClick={() => document.getElementById('file-input')?.click()}
+                  className="h-[27px] rounded-[5px] bg-[#A4D6CB] text-[#0D1717] px-3 py-0 text-[10px] cursor-pointer"
+                >
+                  Upload
+                </Button>
+                <Button
+                  type="button"
+                  onClick={openAddContext}
+                  className="h-[27px] rounded-[5px] bg-[#A4D6CB] text-[#0D1717] px-3 py-0 text-[10px] cursor-pointer"
+                >
+                  Add +
+                </Button>
+              </div>
             )}
           </div>
 
@@ -310,9 +437,13 @@ export default function LibraryPage() {
                     className="h-[72px] rounded-[10px] bg-[#162022] relative grid grid-cols-[auto_1fr_auto] items-center px-4"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-[40px] h-[40px] rounded-[4px] bg-[#1DC6A1] flex items-center justify-center text-white text-[12px]">
-                        S
-                      </div>
+                      <Image
+                        src="/slack.png"
+                        alt="Slack"
+                        width={40}
+                        height={40}
+                        className="rounded-[4px]"
+                      />
                     </div>
                     <div className="flex justify-center">
                       <span className="text-[16px] leading-[1.3em] text-white/90 text-center">Slack</span>
@@ -324,6 +455,32 @@ export default function LibraryPage() {
                       disabled={slackConnecting}
                     >
                       {slackConnecting ? 'Connecting…' : 'Connect'}
+                    </Button>
+                  </div>
+                ) : i === 3 ? (
+                  <div
+                    key={i}
+                    className="h-[72px] rounded-[10px] bg-[#162022] relative grid grid-cols-[auto_1fr_auto] items-center px-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Image
+                        src="/notion.png"
+                        alt="Notion"
+                        width={40}
+                        height={40}
+                        className="rounded-[4px]"
+                      />
+                    </div>
+                    <div className="flex justify-center">
+                      <span className="text-[16px] leading-[1.3em] text-white/90 text-center">Notion</span>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleNotionConnect}
+                      className="h-[27px] rounded-[5px] bg-[#1DC6A1] hover:bg-[#19b391] text-white px-3 py-0 text-[10px] cursor-pointer disabled:opacity-60"
+                      disabled={notionConnecting}
+                    >
+                      {notionConnecting ? 'Connecting…' : 'Connect'}
                     </Button>
                   </div>
                 ) : (

@@ -13,6 +13,7 @@ function getSupabaseAdmin() {
 export async function POST(req: NextRequest) {
   try {
     const supabaseAdmin = getSupabaseAdmin()
+    const body = await req.json().catch(() => ({})) as { providerConfigKey?: string }
 
     const authHeader = req.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
     }
 
     const nangoSecret = process.env.NANGO_SECRET_KEY
-    const providerConfigKey = process.env.NANGO_PROVIDER_CONFIG_KEY || 'slack'
+    const providerConfigKey = (body?.providerConfigKey || process.env.NANGO_PROVIDER_CONFIG_KEY || 'slack').trim()
     if (!nangoSecret) {
       return NextResponse.json({ error: 'Server misconfigured: NANGO_SECRET_KEY missing' }, { status: 500 })
     }

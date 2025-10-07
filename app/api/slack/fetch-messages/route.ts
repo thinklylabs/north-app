@@ -28,8 +28,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'NANGO_SECRET_KEY not configured' }, { status: 500 })
     }
 
-    // Get list of channels (limit to 5 for testing)
-    const channelsUrl = `${nangoBaseUrl}/proxy/conversations.list?limit=5`
+    // Get list of channels (no artificial limits)
+    const channelsUrl = `${nangoBaseUrl}/proxy/conversations.list`
     const channelsResponse = await fetch(channelsUrl, {
       method: 'GET',
       headers: {
@@ -51,13 +51,13 @@ export async function POST(req: NextRequest) {
 
     console.log(`Found ${channels.length} channels for connection ${connectionId}`)
 
-    // Fetch messages from each channel
-    const allMessages = []
+    // Prepare raw_content rows
+    const rawContentRows: any[] = []
     
     for (const channel of channels) {
       try {
-        // Get recent messages from this channel (limit to 10 for testing)
-        const messagesUrl = `${nangoBaseUrl}/proxy/conversations.history?channel=${encodeURIComponent(channel.id)}&limit=10`
+        // Get messages from this channel (no artificial limits; rely on API pagination defaults)
+        const messagesUrl = `${nangoBaseUrl}/proxy/conversations.history?channel=${encodeURIComponent(channel.id)}`
         const messagesResponse = await fetch(messagesUrl, {
           method: 'GET',
           headers: {
@@ -76,44 +76,90 @@ export async function POST(req: NextRequest) {
         const messagesData = await messagesResponse.json()
         const messages = messagesData.messages || []
 
-        // Transform messages for our database
-        const transformedMessages = messages.map((msg: any) => ({
-          user_id: userId,
-          connection_id: connectionId,
-          channel_id: channel.id,
-          slack_ts: msg.ts,
-          text: msg.text,
-          raw: msg
-        }))
+        // Ensure content_source exists per channel
+        const sourceType = 'slack_messages'
+        const sourceName = channel.id
 
-        allMessages.push(...transformedMessages)
-        console.log(`Fetched ${messages.length} messages from channel ${channel.name || channel.id}`)
+        const { data: existingSource } = await supabaseAdmin
+          .from('content_sources')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('source_type', sourceType)
+          .eq('source_name', sourceName)
+          .maybeSingle()
+
+        let sourceId = existingSource?.id as number | undefined
+        if (!sourceId) {
+          const { data: newSource, error: sourceInsertError } = await supabaseAdmin
+            .from('content_sources')
+            .insert({
+              user_id: userId,
+              source_type: sourceType,
+              source_name: sourceName,
+              config: { connection_id: connectionId, channel_name: channel.name }
+            })
+            .select('id')
+            .single()
+          if (sourceInsertError) {
+            console.error('Failed to create content_source for channel', channel.id, sourceInsertError)
+            continue
+          }
+          sourceId = newSource.id
+        }
+
+        // Transform into raw_content rows
+        for (const msg of messages) {
+          const title = 'slack'
+          rawContentRows.push({
+            source_id: sourceId,
+            title,
+            content: msg?.text || '',
+            metadata: {
+              provider: 'slack',
+              connection_id: connectionId,
+              channel_id: channel.id,
+              channel_name: channel.name,
+              slack_ts: msg?.ts,
+              raw: msg
+            }
+          })
+        }
+
+        console.log(`Prepared ${messages.length} raw_content rows from channel ${channel.name || channel.id}`)
       } catch (error) {
         console.error(`Error fetching messages from channel ${channel.id}:`, error)
         continue
       }
     }
 
-    // Insert messages into database (with conflict resolution)
-    if (allMessages.length > 0) {
-      const { error: insertError } = await supabaseAdmin
-        .from('slack_messages')
-        .upsert(allMessages, { 
-          onConflict: 'connection_id,slack_ts',
-          ignoreDuplicates: false
-        })
+    // Insert raw_content rows
+    if (rawContentRows.length > 0) {
+      const { data: inserted, error: insertError } = await supabaseAdmin
+        .from('raw_content')
+        .insert(rawContentRows)
+        .select('id')
 
       if (insertError) {
-        console.error('Error inserting messages:', insertError)
+        console.error('Error inserting raw_content:', insertError)
         return NextResponse.json({ error: insertError.message }, { status: 500 })
       }
 
-      console.log(`Successfully stored ${allMessages.length} messages for user ${userId}`)
+      // Process inserted rows into document_sections
+      try {
+        const { processRawDocument } = await import('@/lib/processRaw')
+        for (const row of inserted || []) {
+          await processRawDocument(row.id)
+        }
+      } catch (e) {
+        console.error('Failed to process some Slack raw documents', e)
+      }
+
+      console.log(`Successfully stored ${rawContentRows.length} raw_content rows for user ${userId}`)
     }
 
     return NextResponse.json({ 
       success: true, 
-      messageCount: allMessages.length,
+      messageCount: rawContentRows.length,
       channelCount: channels.length 
     })
   } catch (err: any) {

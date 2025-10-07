@@ -17,17 +17,68 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Content is required' }, { status: 400 })
     }
 
-    const { data, error } = await supabase
-      .from('thoughts')
-      .insert({ user_id: user.id, content })
+    // Find or create content source for user thoughts
+    const sourceType = 'thoughts'
+    const sourceName = 'user_thoughts'
+
+    const { data: existingSource, error: sourceFetchError } = await supabase
+      .from('content_sources')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('source_type', sourceType)
+      .eq('source_name', sourceName)
+      .maybeSingle()
+
+    if (sourceFetchError) {
+      return NextResponse.json({ error: sourceFetchError.message }, { status: 500 })
+    }
+
+    let sourceId = existingSource?.id as number | undefined
+    if (!sourceId) {
+      const { data: newSource, error: insertSourceError } = await supabase
+        .from('content_sources')
+        .insert({
+          user_id: user.id,
+          source_type: sourceType,
+          source_name: sourceName,
+          config: {}
+        })
+        .select('id')
+        .single()
+
+      if (insertSourceError) {
+        return NextResponse.json({ error: insertSourceError.message }, { status: 500 })
+      }
+
+      sourceId = newSource.id
+    }
+
+    // Insert the thought into raw_content
+    const { data: rawContent, error: rawInsertError } = await supabase
+      .from('raw_content')
+      .insert({
+        source_id: sourceId,
+        title: 'Thought',
+        content: content.trim(),
+        metadata: {}
+      })
       .select('*')
       .single()
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (rawInsertError) {
+      return NextResponse.json({ error: rawInsertError.message }, { status: 500 })
     }
 
-    return NextResponse.json({ message: data }, { status: 201 })
+    // Immediately process this raw document into document_sections
+    try {
+      const { processRawDocument } = await import('@/lib/processRaw')
+      await processRawDocument(rawContent.id)
+    } catch (err) {
+      // Do not fail the request if processing fails; ingestion succeeded
+      console.error('Failed to process raw thought document:', err)
+    }
+
+    return NextResponse.json({ message: rawContent }, { status: 201 })
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unknown error'
     return NextResponse.json({ error: message }, { status: 500 })

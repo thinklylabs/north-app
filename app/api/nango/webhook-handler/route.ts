@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
       console.log('Connection saved successfully')
 
-      // Trigger message fetching for Slack connections
+      // Trigger fetching for Slack/Notion connections
       if (providerConfigKey === 'slack') {
         try {
           console.log('Triggering Slack message fetch...')
@@ -75,6 +75,18 @@ export async function POST(req: NextRequest) {
         } catch (error) {
           console.error('Error triggering message fetch:', error)
           // Don't fail the webhook if message fetching fails
+        }
+      } else if (providerConfigKey === 'notion') {
+        try {
+          console.log('Triggering Notion import...')
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+          await fetch(`${baseUrl}/api/notion/import`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, connectionId, providerConfigKey })
+          })
+        } catch (error) {
+          console.error('Error triggering Notion import:', error)
         }
       }
 

@@ -83,8 +83,8 @@ export async function POST(req: NextRequest) {
     if (!files.length) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 })
     }
-    if (files.length > 10) {
-      return NextResponse.json({ error: 'Too many files. Max 10.' }, { status: 400 })
+    if (files.length > 5) {
+      return NextResponse.json({ error: 'Too many files. Max 5.' }, { status: 400 })
     }
 
     const sourceType = 'files'

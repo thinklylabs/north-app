@@ -1,4 +1,4 @@
-type SourceType = 'thoughts' | 'slack_messages' | 'substack_feeds' | 'files' | 'notion'
+type SourceType = 'thoughts' | 'slack_messages' | 'substack_feeds' | 'files' | 'notion' | 'tldv'
 
 export interface Chunk {
   content: string
@@ -30,6 +30,8 @@ export function chunkBySourceType(
         filename: metadata?.filename,
         mime_type: metadata?.mime_type,
       })
+    case 'tldv':
+      return chunkTldvTranscript(content, metadata)
     case 'thoughts':
     default:
       return chunkGeneric(content, metadata, {
@@ -86,6 +88,67 @@ function chunkGeneric(
     start = Math.max(0, end - overlap)
     index += 1
   }
+  return chunks
+}
+
+function chunkTldvTranscript(content: string, metadata: any): Chunk[] {
+  const trimmed = (content || '').trim()
+  if (!trimmed) return []
+  
+  // For tl;dv, we'll chunk by speaker segments to maintain context
+  const segments = metadata?.segments || []
+  if (segments.length === 0) {
+    // Fallback to generic chunking if no segments
+    return chunkGeneric(content, metadata, {
+      type: 'tldv_transcript',
+      meeting_id: metadata?.meeting_id,
+      meeting_name: metadata?.meeting_name,
+      chunk_index: 0,
+    })
+  }
+
+  const chunks: Chunk[] = []
+  let currentChunk = ''
+  let chunkIndex = 0
+  const maxChunkSize = 2000
+  const overlap = 200
+
+  for (const segment of segments) {
+    const segmentText = `${segment.speaker}: ${segment.text}\n`
+    
+    if (currentChunk.length + segmentText.length > maxChunkSize && currentChunk.length > 0) {
+      chunks.push({
+        content: currentChunk.trim(),
+        metadata: {
+          type: 'tldv_transcript',
+          meeting_id: metadata?.meeting_id,
+          meeting_name: metadata?.meeting_name,
+          chunk_index: chunkIndex,
+          start_time: segments[chunkIndex * 10]?.startTime || 0,
+          end_time: segments[Math.min((chunkIndex + 1) * 10 - 1, segments.length - 1)]?.endTime || 0,
+        },
+      })
+      currentChunk = segmentText
+      chunkIndex++
+    } else {
+      currentChunk += segmentText
+    }
+  }
+
+  if (currentChunk.trim()) {
+    chunks.push({
+      content: currentChunk.trim(),
+      metadata: {
+        type: 'tldv_transcript',
+        meeting_id: metadata?.meeting_id,
+        meeting_name: metadata?.meeting_name,
+        chunk_index: chunkIndex,
+        start_time: segments[chunkIndex * 10]?.startTime || 0,
+        end_time: segments[segments.length - 1]?.endTime || 0,
+      },
+    })
+  }
+
   return chunks
 }
 

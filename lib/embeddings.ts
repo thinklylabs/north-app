@@ -3,21 +3,32 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     throw new Error('OPENAI_API_KEY environment variable is not set')
   }
 
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      input: text,
-      model: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small'
+  const doRequest = async () =>
+    fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        input: text,
+        model: process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small'
+      })
     })
-  })
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`)
+  let response: Response
+  try {
+    response = await doRequest()
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`)
+    }
+  } catch (e) {
+    response = await doRequest()
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`)
+    }
   }
 
   const data = await response.json()

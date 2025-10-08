@@ -27,6 +27,10 @@ export default function LibraryPage() {
   const [substackImportMessage, setSubstackImportMessage] = useState("");
   const [slackConnecting, setSlackConnecting] = useState(false);
   const [notionConnecting, setNotionConnecting] = useState(false);
+  const [tldvConnecting, setTldvConnecting] = useState(false);
+  const [tldvApiKey, setTldvApiKey] = useState("");
+  const [tldvImportMessage, setTldvImportMessage] = useState("");
+  const [tldvModalOpen, setTldvModalOpen] = useState(false);
 
   function openModal() {
     setIsModalOpen(true);
@@ -256,6 +260,36 @@ export default function LibraryPage() {
       setSubstackImporting(false);
     }
   }
+
+  async function handleTldvConnect() {
+    try {
+      setTldvConnecting(true);
+      const supabase = createSupabaseBrowserClient();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      const token = session?.access_token;
+      if (!token) throw new Error("You must be logged in");
+
+      const res = await fetch("/api/tldv/import", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ apiKey: tldvApiKey }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Import failed");
+
+      setTldvImportMessage(json?.message || "Import successful!");
+    } catch (e: any) {
+      setTldvImportMessage(e?.message || "Import failed. Please check your API key and try again.");
+    } finally {
+      setTldvConnecting(false);
+    }
+  }
+
   return (
     <main className="min-h-screen w-full bg-[#FCF9F5] text-[#0D1717]">
       <div className="w-full min-h-screen flex">
@@ -481,6 +515,31 @@ export default function LibraryPage() {
                       disabled={notionConnecting}
                     >
                       {notionConnecting ? 'Connecting…' : 'Connect'}
+                    </Button>
+                  </div>
+                ) : i === 4 ? (
+                  <div
+                    key={i}
+                    className="h-[72px] rounded-[10px] bg-[#162022] relative grid grid-cols-[auto_1fr_auto] items-center px-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Image
+                        src="/tldv.png"
+                        alt="tl;dv"
+                        width={40}
+                        height={40}
+                        className="rounded-[4px]"
+                      />
+                    </div>
+                    <div className="flex justify-center">
+                      <span className="text-[16px] leading-[1.3em] text-white/90 text-center">tl;dv</span>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => setTldvModalOpen(true)}
+                      className="h-[27px] rounded-[5px] bg-[#1DC6A1] hover:bg-[#19b391] text-white px-3 py-0 text-[10px] cursor-pointer"
+                    >
+                      Connect
                     </Button>
                   </div>
                 ) : (
@@ -762,6 +821,61 @@ export default function LibraryPage() {
                       <p className="mt-3 text-[12px] text-center text-[#0D1717]/80">{substackImportMessage}</p>
                     )}
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* tl;dv Modal */}
+          {tldvModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div
+                className="absolute inset-0 bg-black/20 backdrop-blur-[6px]"
+                onClick={() => setTldvModalOpen(false)}
+              />
+              <div className="relative z-10 w-[640px] max-w-[92vw] rounded-[8px] bg-white shadow-xl border border-[#0D1717]/10">
+                <div className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h2 className={`${oldStandard.className} text-[18px] leading-[1.2] text-[#0D1717]`}>
+                        Add tl;dv API key
+                      </h2>
+                    </div>
+                    <button
+                      aria-label="Close"
+                      className="ml-4 h-6 w-6 inline-flex items-center justify-center rounded hover:bg-black/5 text-[#0D1717]/70 cursor-pointer"
+                      onClick={() => setTldvModalOpen(false)}
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <div className="mt-5">
+                    <input
+                      type="password"
+                      placeholder="API key"
+                      value={tldvApiKey}
+                      onChange={(e) => setTldvApiKey(e.target.value)}
+                      className="h-[36px] w-full rounded-[6px] border border-[#0D1717]/15 bg-white px-3 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30"
+                    />
+                  </div>
+
+                  <div className="mt-5">
+                    <button
+                      type="button"
+                      className="w-full h-[32px] rounded-[6px] bg-[#A4D6CB] text-[#0D1717] text-[12px] cursor-pointer disabled:opacity-60"
+                      disabled={tldvConnecting || !tldvApiKey}
+                      onClick={handleTldvConnect}
+                    >
+                      {tldvConnecting ? 'Syncing...' : 'Sync All Meetings'}
+                    </button>
+                  </div>
+
+                  {tldvImportMessage && (
+                    <div className="mt-4 p-3 rounded-[6px] bg-[#f0f9ff] border border-[#0ea5e9]/20">
+                      <p className="text-[12px] text-[#0369a1]">{tldvImportMessage}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

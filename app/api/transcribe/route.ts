@@ -55,13 +55,25 @@ export async function POST(req: NextRequest) {
     const stats = await fs.stat(tempFilePath);
     console.log('Temp file stats:', { size: stats.size, isFile: stats.isFile() });
 
-    // Transcribe using Whisper model
+    // Transcribe using Whisper model (with single retry)
     console.log('Starting transcription...');
-    const transcription = await openai.audio.transcriptions.create({
-      file: fsSync.createReadStream(tempFilePath),
-      model: 'whisper-1',
-      language: 'en',
-    });
+    const filePath = tempFilePath;
+    if (!filePath) {
+      return NextResponse.json({ error: 'Temp file path missing' }, { status: 500 });
+    }
+    const doTranscribe = async () =>
+      openai.audio.transcriptions.create({
+        file: fsSync.createReadStream(filePath),
+        model: 'whisper-1',
+        language: 'en',
+      });
+
+    let transcription;
+    try {
+      transcription = await doTranscribe();
+    } catch (e) {
+      transcription = await doTranscribe();
+    }
 
     console.log('Transcription successful:', transcription.text);
 

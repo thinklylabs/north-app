@@ -96,30 +96,36 @@ async function generateChatResponse(question: string, context: any[]) {
     .map((c: any, i: number) => `(${i + 1}) [${c.section_type}] ${c.content}`)
     .join('\n');
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a retrieval-augmented assistant. Use ONLY the provided context to answer. If the context is insufficient, explicitly say you do not have enough information. Do not invent facts. Keep responses concise and cite snippets using (1), (2), etc. corresponding to the provided context items.'
-        },
-        { role: 'system', content: `Context:\n${contextText.slice(0, 12000)}` },
-        { role: 'user', content: question }
-      ],
-      temperature: 0.2,
-      top_p: 0.9
-    })
-  });
+  const doRequest = async () =>
+    fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a retrieval-augmented assistant. Use ONLY the provided context to answer. If the context is insufficient, explicitly say you do not have enough information. Do not invent facts. Keep responses concise and cite snippets using (1), (2), etc. corresponding to the provided context items.'
+          },
+          { role: 'system', content: `Context:\n${contextText.slice(0, 12000)}` },
+          { role: 'user', content: question }
+        ],
+        temperature: 0.2,
+        top_p: 0.9
+      })
+    });
 
-  if (!response.ok) {
-    throw new Error(`OpenAI API error: ${response.statusText}`);
+  let response: Response;
+  try {
+    response = await doRequest();
+    if (!response.ok) throw new Error(`OpenAI API error: ${response.statusText}`);
+  } catch (e) {
+    response = await doRequest();
+    if (!response.ok) throw new Error(`OpenAI API error: ${response.statusText}`);
   }
 
   const data = await response.json();
@@ -131,22 +137,34 @@ async function generateEmbedding(text: string) {
     throw new Error('OPENAI_API_KEY environment variable is not set');
   }
 
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      input: text,
-      model: 'text-embedding-3-small'
-    })
-  });
+  const doRequest = async () =>
+    fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        input: text,
+        model: 'text-embedding-3-small'
+      })
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('OpenAI API error details:', errorText);
-    throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`);
+  let response: Response;
+  try {
+    response = await doRequest();
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API error details:', errorText);
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+  } catch (e) {
+    response = await doRequest();
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API error details (retry):', errorText);
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
   }
 
   const data = await response.json();

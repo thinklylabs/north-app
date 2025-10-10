@@ -78,6 +78,14 @@ export async function POST(req: Request) {
       console.error('Failed to process raw thought document:', err)
     }
 
+    // Generate idea for this raw document (non-blocking best-effort)
+    try {
+      const { generateIdeaForRawId } = await import('@/lib/ideas')
+      await generateIdeaForRawId(rawContent.id)
+    } catch (err) {
+      console.error('Failed to generate idea for thought raw document:', err)
+    }
+
     return NextResponse.json({ message: rawContent }, { status: 201 })
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unknown error'

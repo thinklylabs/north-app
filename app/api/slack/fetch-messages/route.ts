@@ -154,6 +154,16 @@ export async function POST(req: NextRequest) {
         console.error('Failed to process some Slack raw documents', e)
       }
 
+      // Generate ideas for inserted rows (best-effort)
+      try {
+        const { generateIdeaForRawId } = await import('@/lib/ideas')
+        for (const row of inserted || []) {
+          await generateIdeaForRawId(row.id)
+        }
+      } catch (e) {
+        console.error('Failed to generate ideas for some Slack raw documents', e)
+      }
+
       console.log(`Successfully stored ${rawContentRows.length} raw_content rows for user ${userId}`)
     }
 

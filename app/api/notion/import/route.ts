@@ -198,6 +198,14 @@ export async function POST(req: NextRequest) {
       // ignore
     }
 
+    // Generate idea (best-effort)
+    try {
+      const { generateIdeaForRawId } = await import('@/lib/ideas')
+      await generateIdeaForRawId(insertedRaw.id)
+    } catch (e) {
+      console.error('Failed to generate idea for Notion raw document', e)
+    }
+
     return NextResponse.json({ success: true, pages: sections.length, inserted: 1 })
   } catch (err: any) {
     console.error('Notion import error:', err)

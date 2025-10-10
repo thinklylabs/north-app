@@ -98,7 +98,7 @@ export default function Onboarding() {
       </div>
       <div className="hidden md:block w-[624px] min-h-screen bg-[url('/signup-art.png')] bg-cover bg-center ml-auto rotate-180" />
 
-      <Toaster richColors position="bottom-right" />
+      <Toaster position="bottom-right" />
     </main>
   );
 }

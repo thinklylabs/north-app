@@ -177,6 +177,16 @@ export async function POST(req: NextRequest) {
       console.error('Failed to process some tl;dv raw documents', e)
     }
 
+    // Generate ideas for inserted rows (best-effort)
+    try {
+      const { generateIdeaForRawId } = await import('@/lib/ideas')
+      for (const row of inserted || []) {
+        await generateIdeaForRawId(row.id)
+      }
+    } catch (e) {
+      console.error('Failed to generate ideas for some tl;dv raw documents', e)
+    }
+
     return NextResponse.json({
       success: true,
       message: `Imported ${rawContentRows.length} meeting transcripts successfully.`,

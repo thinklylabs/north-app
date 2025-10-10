@@ -8,7 +8,7 @@ import Image from "next/image";
 import { useState } from "react";
 import Nango from "@nangohq/frontend";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
 
@@ -882,6 +882,7 @@ export default function LibraryPage() {
           )}
         </section>
       </div>
+      <Toaster position="bottom-right" />
     </main>
   );
 }

@@ -142,6 +142,14 @@ export async function POST(req: NextRequest) {
           console.error('Failed to process substack raw document', e)
         }
 
+        // Generate idea for this raw document (best-effort)
+        try {
+          const { generateIdeaForRawId } = await import('@/lib/ideas')
+          await generateIdeaForRawId(insertedRaw.id)
+        } catch (e) {
+          console.error('Failed to generate idea for substack raw document', e)
+        }
+
         imported.push(cleaned)
         results.push({ url: cleaned, ok: true, inserted: 1 })
         await new Promise((r) => setTimeout(r, 150))

@@ -196,6 +196,14 @@ export async function POST(req: NextRequest) {
           console.error('Failed processing uploaded file', e)
         }
 
+        // Generate idea for this raw document (best-effort)
+        try {
+          const { generateIdeaForRawId } = await import('@/lib/ideas')
+          await generateIdeaForRawId(raw.id)
+        } catch (e) {
+          console.error('Failed generating idea for uploaded file', e)
+        }
+
         insertedIds.push(raw.id)
         results.push({ name, ok: true, message: `parsed ${cleaned.length} chars` })
       } catch (e: any) {

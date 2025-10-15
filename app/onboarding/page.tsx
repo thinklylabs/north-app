@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Old_Standard_TT } from "next/font/google";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,12 +18,44 @@ export default function Onboarding() {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  
   const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
     if (profileUpserted) return;
     upsertCurrentUserProfile().finally(() => setProfileUpserted(true));
   }, [profileUpserted]);
+
+  // Show LinkedIn success toast when redirected back from Unipile to onboarding
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    const status = url.searchParams.get("unipile_status");
+    const accountId = url.searchParams.get("unipile_account_id");
+    const error = url.searchParams.get("unipile_error");
+    if (status || accountId || error) {
+      if (!error && (status?.toLowerCase() === "connected" || status?.toLowerCase() === "creation_success" || !status)) {
+        toast.success("LinkedIn connected", {
+          description: (
+            <span className="text-black">Your LinkedIn account is connected.</span>
+          ),
+          icon: (
+            <Image src="/linkedin_toast.svg" alt="LinkedIn" width={18} height={18} />
+          ),
+        });
+      }
+      // Persist account id for later use in Start growing
+      if (accountId) {
+        try { localStorage.setItem("unipile_account_id", accountId); } catch {}
+      }
+      // Clean query params from URL without reloading
+      url.searchParams.delete("unipile_status");
+      url.searchParams.delete("unipile_account_id");
+      url.searchParams.delete("unipile_error");
+      window.history.replaceState({}, "", url.pathname + (url.search ? `?${url.searchParams.toString()}` : ""));
+    }
+  }, []);
 
   return (
     <main className="min-h-screen w-full bg-[#FCF9F5] text-[#0D1717] flex">
@@ -38,13 +71,41 @@ export default function Onboarding() {
           Connect your LinkedIn account
         </p>
         <div className="mt-[10px] w-[326px]">
-          <Button type="button" className="w-full rounded-[5px] bg-[#1DC6A1] hover:bg-[#1DC6A1] flex items-center justify-center gap-[12px] py-[10px] px-[106px] h-auto">
+          <Button
+            type="button"
+            className="w-full rounded-[5px] bg-[#1DC6A1] hover:bg-[#1DC6A1] flex items-center justify-center gap-[12px] py-[10px] px-[106px] h-auto cursor-pointer"
+            onClick={async () => {
+              try {
+                const { data: { session } } = await supabase.auth.getSession();
+                const res = await fetch("/api/unipile/linkedin/hosted-link", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+                  },
+                });
+                const json = await res.json();
+                if (!res.ok) {
+                  toast.error("Failed to start LinkedIn connect", { description: json?.error || "Please try again." });
+                  return;
+                }
+                if (json?.url) {
+                  window.location.href = json.url as string;
+                } else {
+                  toast.error("Hosted link missing", { description: "Please try again." });
+                }
+              } catch (e: any) {
+                toast.error("Something went wrong", { description: e?.message || "Please try again." });
+              }
+            }}
+          >
             <div className="w-[10px] h-[10px]">
               <Image src="/linkedin.svg" alt="LinkedIn" width={10} height={12} />
             </div>
             <span className="font-sans text-[11px] leading-[1.3em] text-white">Link your account</span>
           </Button>
         </div>
+
 
         <p className="font-sans mt-[24px] w-[71px] text-[12px] leading-[1.3em]">Website URL</p>
         <Input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://www.thinklylabs.com/" className="mt-[7px] w-[326px] h-[30px] bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]" />
@@ -65,6 +126,24 @@ export default function Onboarding() {
               setSubmitting(true);
               try {
                 const { data: { session } } = await supabase.auth.getSession();
+                // Carry account_id from callback URL and pass user_id
+                const currentUrl = new URL(window.location.href);
+                const unipileAccountId = currentUrl.searchParams.get("unipile_account_id")
+                  || (typeof window !== "undefined" ? localStorage.getItem("unipile_account_id") : null)
+                  || undefined;
+                try {
+                  await fetch("/api/unipile/linkedin/sync", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+                    },
+                    body: JSON.stringify({
+                      account_id: unipileAccountId,
+                      user_id: session?.user?.id,
+                    }),
+                  });
+                } catch { /* non-blocking */ }
                 const res = await fetch("/api/profile/ingest", {
                   method: "POST",
                   headers: {
@@ -76,21 +155,16 @@ export default function Onboarding() {
                 if (!res.ok) {
                   toast.error("Website analysis failed", { description: "Please try again in a moment." });
                 } else {
-                  // Keep the LinkedIn success toast
-                  toast.success("Success", {
-                    description: "Your LinkedIn account is connected, setting up your account.",
-                    icon: (
-                      <Image src="/linkedin_toast.svg" alt="LinkedIn" width={18} height={18} />
-                    ),
-                  });
-                  // Website analysis toast
+                  // Website analysis toast only; navigation occurs after
                   toast.success("Website analysis completed");
+                  // Navigate to dashboard after onboarding completes
+                  router.replace("/dashboard");
                 }
               } finally {
                 setSubmitting(false);
               }
             }}
-            className="w-full rounded-[5px] bg-[#1DC6A1] hover:bg-[#1DC6A1] px-[106px] py-[6px] h-auto disabled:opacity-60"
+            className="w-full rounded-[5px] bg-[#1DC6A1] hover:bg-[#1DC6A1] px-[106px] py-[6px] h-auto disabled:opacity-60 cursor-pointer"
           >
             <span className="font-sans text-[12px] leading-[1.3em] text-white">{submitting ? "Saving..." : "Start growing"}</span>
           </Button>

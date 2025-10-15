@@ -23,7 +23,7 @@ export default function LogoutButton() {
           setLoading(false);
         }
       }}
-      className="h-[30px] rounded-[5px] bg-[#FCF9F5] border border-[#171717] [border-width:0.5px] px-3 py-0 text-[10px]"
+      className="h-[30px] rounded-[5px] bg-[#171717] text-[#FCF9F5] border border-[#171717] [border-width:0.5px] px-3 py-0 text-[10px] hover:bg-[#2B2B2B] hover:text-[#FCF9F5]"
     >
       {loading ? "Signing out..." : "Logout"}
     </Button>

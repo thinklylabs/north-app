@@ -2,13 +2,13 @@
 
 import { Old_Standard_TT } from "next/font/google";
 import { Button } from "@/components/ui/button";
-import DashboardSidebar from "@/components/DashboardSidebar";
 import LogoutButton from "@/components/LogoutButton";
 import Image from "next/image";
 import { useState } from "react";
 import Nango from "@nangohq/frontend";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { toast, Toaster } from "sonner";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
 
@@ -291,17 +291,16 @@ export default function LibraryPage() {
   }
 
   return (
-    <main className="min-h-screen w-full bg-[#FCF9F5] text-[#0D1717]">
-      <div className="w-full min-h-screen flex">
-        <DashboardSidebar />
-        <section className="flex-1 relative px-6 md:px-10 pb-24">
-          <div className="absolute right-6 top-6 md:right-10 md:top-[23px]">
-            <LogoutButton />
-          </div>
-          {/* Breadcrumb */}
-          <div className="pt-6 md:pt-[23px] flex items-center gap-3">
-            <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Library</span>
-          </div>
+    <div className="min-h-screen w-full bg-[#FCF9F5] text-[#0D1717]">
+      <div className="flex items-center justify-between p-6 md:px-10">
+        <div className="flex items-center gap-3">
+          <SidebarTrigger />
+          <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Library</span>
+        </div>
+        <LogoutButton />
+      </div>
+
+      <div className="px-6 md:px-10 pb-24">
 
           {/* Title */}
           <h1 className={`${oldStandard.className} text-[30px] leading-[1.236em] mt-[30px]`}>
@@ -391,14 +390,14 @@ export default function LibraryPage() {
                 <Button
                   type="button"
                   onClick={() => document.getElementById('file-input')?.click()}
-                  className="h-[27px] rounded-[5px] bg-[#A4D6CB] text-[#0D1717] px-3 py-0 text-[10px] cursor-pointer"
+                  className="h-[27px] rounded-[5px] bg-[#A4D6CB] hover:bg-[#97CFC3] text-[#0D1717] px-3 py-0 text-[10px] cursor-pointer"
                 >
                   Upload
                 </Button>
                 <Button
                   type="button"
                   onClick={openAddContext}
-                  className="h-[27px] rounded-[5px] bg-[#A4D6CB] text-[#0D1717] px-3 py-0 text-[10px] cursor-pointer"
+                  className="h-[27px] rounded-[5px] bg-[#A4D6CB] hover:bg-[#97CFC3] text-[#0D1717] px-3 py-0 text-[10px] cursor-pointer"
                 >
                   Add +
                 </Button>
@@ -880,10 +879,9 @@ export default function LibraryPage() {
               </div>
             </div>
           )}
-        </section>
       </div>
       <Toaster position="bottom-right" />
-    </main>
+    </div>
   );
 }
 

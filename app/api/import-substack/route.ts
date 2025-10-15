@@ -34,30 +34,31 @@ export async function POST(req: NextRequest) {
     const imported: string[] = []
     const results: Array<{ url: string; ok: boolean; message?: string; inserted?: number }> = []
 
-    for (const rawUrl of urls) {
+    async function handleUrl(rawUrl: string) {
       const cleaned = typeof rawUrl === 'string' ? rawUrl.trim() : ''
       if (!/^https?:\/\/[a-z0-9-]+\.substack\.com(\/.*)?$/i.test(cleaned)) {
-        continue
+        return { url: cleaned || rawUrl, ok: false, message: 'invalid substack url' as const }
       }
-
       const base = cleaned.replace(/\/$/, '')
       const feedUrl = `${base}/feed`
 
+      // Abort long-running network requests to avoid hanging
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 12000)
       try {
-        // Fetch XML manually with a standard UA; then parse
         const res = await fetch(feedUrl, {
           cache: 'no-store',
           headers: {
             'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119 Safari/537.36',
             'accept': 'application/rss+xml, application/xml;q=0.9, */*;q=0.8'
-          }
+          },
+          signal: controller.signal
         })
         if (!res.ok) {
           const body = await res.text().catch(() => '')
           const msg = `fetch ${res.status} ${res.statusText}`
           console.error('Failed to fetch Substack feed', feedUrl, msg, body?.slice(0, 500))
-          results.push({ url: cleaned, ok: false, message: msg })
-          continue
+          return { url: cleaned, ok: false, message: msg }
         }
         const xml = await res.text()
         let items
@@ -66,18 +67,16 @@ export async function POST(req: NextRequest) {
         } catch (e: any) {
           const msg = `parse error: ${e?.message || 'unknown'}`
           console.error('RSS parse error', feedUrl, msg)
-          results.push({ url: cleaned, ok: false, message: msg })
-          continue
+          return { url: cleaned, ok: false, message: msg }
         }
 
         // Ensure a content_source exists for this base Substack URL
         const sourceType = 'substack_feeds'
         const sourceName = base
-
         const { data: existingSource } = await supabaseAdmin
           .from('content_sources')
           .select('id')
-          .eq('user_id', user.id)
+          .eq('user_id', user!.id)
           .eq('source_type', sourceType)
           .eq('source_name', sourceName)
           .maybeSingle()
@@ -86,78 +85,76 @@ export async function POST(req: NextRequest) {
         if (!sourceId) {
           const { data: newSource, error: sourceInsertError } = await supabaseAdmin
             .from('content_sources')
-            .insert({
-              user_id: user.id,
-              source_type: sourceType,
-              source_name: sourceName,
-              config: {}
-            })
+            .insert({ user_id: user!.id, source_type: sourceType, source_name: sourceName, config: {} })
             .select('id')
             .single()
-
           if (sourceInsertError) {
-            continue
+            return { url: cleaned, ok: false, message: `db source error: ${sourceInsertError.message}` }
           }
           sourceId = newSource.id
         }
 
-        // Build one clean-text blob for the whole feed (same storage shape as before)
-        const feedText = (items || []).map((it: any) => {
-          const headerParts = [it.title].filter(Boolean)
-          const header = headerParts.join('')
-          const dateLine = it.pubDate ? `\n${new Date(it.pubDate).toUTCString()}` : ''
-          const linkLine = it.link ? `\n${it.link}` : ''
-          const body = it.text || ''
-          return `${header}${dateLine}${linkLine}\n\n${body}`.trim()
-        }).filter(Boolean).join(`\n\n------------------------------\n\n`)
+        // Build one clean-text blob for the whole feed
+        const feedText = (items || [])
+          .map((it: any) => {
+            const headerParts = [it.title].filter(Boolean)
+            const header = headerParts.join('')
+            const dateLine = it.pubDate ? `\n${new Date(it.pubDate).toUTCString()}` : ''
+            const linkLine = it.link ? `\n${it.link}` : ''
+            const body = it.text || ''
+            return `${header}${dateLine}${linkLine}\n\n${body}`.trim()
+          })
+          .filter(Boolean)
+          .join(`\n\n------------------------------\n\n`)
 
         if (!feedText || !feedText.trim()) {
-          results.push({ url: cleaned, ok: false, message: 'no items with text content' })
-          continue
+          return { url: cleaned, ok: false, message: 'no items with text content' }
         }
 
-        // Insert single raw_content row, preserving previous title and metadata shape
         const { data: insertedRaw, error: rawInsertError } = await supabaseAdmin
           .from('raw_content')
-          .insert({
-            source_id: sourceId,
-            title: 'Substack feed',
-            content: feedText,
-            metadata: { url: cleaned }
-          })
+          .insert({ source_id: sourceId, title: 'Substack feed', content: feedText, metadata: { url: cleaned } })
           .select('id')
           .single()
 
         if (rawInsertError) {
           console.error('raw_content insert error', rawInsertError)
-          results.push({ url: cleaned, ok: false, message: `db insert error: ${rawInsertError.message}` })
-          continue
+          return { url: cleaned, ok: false, message: `db insert error: ${rawInsertError.message}` }
         }
 
-        // Immediately process into document_sections
-        try {
-          const { processRawDocument } = await import('@/lib/processRaw')
-          await processRawDocument(insertedRaw.id)
-        } catch (e) {
-          console.error('Failed to process substack raw document', e)
-        }
-
-        // Generate idea for this raw document (best-effort)
-        try {
-          const { generateIdeaForRawId } = await import('@/lib/ideas')
-          await generateIdeaForRawId(insertedRaw.id)
-        } catch (e) {
-          console.error('Failed to generate idea for substack raw document', e)
-        }
+        // Fire-and-forget: process and generate ideas without blocking response
+        ;(async () => {
+          try {
+            const { processRawDocument } = await import('@/lib/processRaw')
+            await processRawDocument(insertedRaw.id)
+          } catch (e) {
+            console.error('Failed to process substack raw document', e)
+          }
+          try {
+            const { generateIdeaForRawId } = await import('@/lib/ideas')
+            await generateIdeaForRawId(insertedRaw.id)
+          } catch (e) {
+            console.error('Failed to generate idea for substack raw document', e)
+          }
+        })().catch(() => {})
 
         imported.push(cleaned)
-        results.push({ url: cleaned, ok: true, inserted: 1 })
-        await new Promise((r) => setTimeout(r, 150))
+        return { url: cleaned, ok: true, inserted: 1 }
       } catch (e: any) {
-        const msg = e?.message || 'unexpected error'
+        const msg = e?.name === 'AbortError' ? 'fetch timeout' : (e?.message || 'unexpected error')
         console.error('Unhandled Substack import error', feedUrl, msg)
-        results.push({ url: cleaned, ok: false, message: msg })
-        continue
+        return { url: cleaned, ok: false, message: msg }
+      } finally {
+        clearTimeout(timeout)
+      }
+    }
+
+    const settled = await Promise.allSettled(urls.map(handleUrl))
+    for (const r of settled) {
+      if (r.status === 'fulfilled') {
+        results.push(r.value)
+      } else {
+        results.push({ url: '', ok: false, message: r.reason?.message || 'unhandled error' })
       }
     }
 

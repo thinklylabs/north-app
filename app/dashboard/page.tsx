@@ -4,6 +4,7 @@ import LogoutButton from "@/components/LogoutButton";
 import { Old_Standard_TT } from "next/font/google";
 import { useState, useRef } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { requireUser } from "@/lib/auth";
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
 

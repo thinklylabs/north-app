@@ -1,134 +1,206 @@
 "use client";
 
-import Image from "next/image";
 import { Old_Standard_TT } from "next/font/google";
-import LogoutButton from "@/components/LogoutButton";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { requireAdmin } from "@/lib/auth";
+import { 
+  Users, 
+  Settings, 
+  BarChart3, 
+  Shield, 
+  Database,
+  Activity,
+  TrendingUp,
+  UserCheck,
+  AlertTriangle
+} from "lucide-react";
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
 
 export default function AdminPage() {
-  const [collapsed, setCollapsed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Mock data for admin dashboard
+  const adminStats = [
+    { title: "Total Users", value: "1,234", change: "+12%", icon: Users },
+    { title: "Active Sessions", value: "89", change: "+5%", icon: Activity },
+    { title: "System Health", value: "99.9%", change: "Stable", icon: Shield },
+    { title: "Database Size", value: "2.4GB", change: "+0.3GB", icon: Database },
+  ];
+
+  const recentActivities = [
+    { user: "john.doe@example.com", action: "Signed up", time: "2 minutes ago", type: "user" },
+    { user: "admin@thinklylabs.com", action: "Updated system settings", time: "15 minutes ago", type: "admin" },
+    { user: "jane.smith@example.com", action: "Connected LinkedIn", time: "1 hour ago", type: "user" },
+    { user: "bob.wilson@example.com", action: "Generated post", time: "2 hours ago", type: "user" },
+  ];
+
+  const handleSystemAction = async (action: string) => {
+    setIsLoading(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    alert(`${action} completed successfully`);
+    setIsLoading(false);
+  };
+
   return (
-    <main className="min-h-screen w-full bg-[#FCF9F5] text-[#0D1717]">
-      <div className="w-full min-h-screen flex">
-        <aside className={`hidden md:flex flex-col relative min-h-screen transition-all duration-200 ${collapsed ? "w-[60px]" : "w-[267px]"}`}>
-          <div className="absolute top-0 right-0 h-full w-px bg-[#0D1717]/30" />
-          {collapsed ? (
-            <div className="p-3 flex items-center justify-center">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCollapsed(false)}
-                className="inline-flex items-center justify-center w-[27px] h-[27px] rounded-[5px] bg-[#FCF9F5] border border-[#171717] [border-width:0.5px] p-0"
-                aria-label="Expand sidebar"
+    <div className="min-h-screen w-full bg-[#FCF9F5] text-[#0D1717]">
+      <div className="px-6 md:px-10 pb-[140px]">
+        <h1 className={`${oldStandard.className} text-[30px] leading-[1.236em] mt-[30px]`}>
+          Admin Dashboard
+        </h1>
+
+        <div className="mt-6 md:mt-10">
+          <p className="text-[14px] leading-[1.3em] text-[#6F7777]">
+            Welcome to the admin panel. Monitor system performance and manage users.
+          </p>
+        </div>
+
+        {/* Admin Stats Grid */}
+        <h2 className={`${oldStandard.className} text-[16px] leading-[1.236em] mt-[55px]`}>
+          System Overview
+        </h2>
+
+        <div className="mt-[20px] grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[22px]">
+          {adminStats.map((stat, index) => (
+            <div key={index} className="h-[120px] rounded-[10px] bg-[#171717] text-[#FCF9F5] p-4 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <stat.icon className="w-5 h-5 text-[#1DC6A1]" />
+                <span className="text-[10px] text-[#B1DAD0]">{stat.change}</span>
+              </div>
+              <div>
+                <p className="text-[12px] font-medium">{stat.title}</p>
+                <p className="text-[18px] font-bold mt-1">{stat.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Admin Actions */}
+        <h2 className={`${oldStandard.className} text-[16px] leading-[1.236em] mt-[55px]`}>
+          Admin Actions
+        </h2>
+
+        <div className="mt-[20px] grid grid-cols-1 md:grid-cols-2 gap-[22px]">
+          <div className="h-[200px] rounded-[10px] bg-white border border-[#171717]/20 [border-width:0.5px] shadow-[0_6px_20px_rgba(13,23,23,0.08)] p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Users className="w-5 h-5 text-[#1DC6A1]" />
+              <span className="text-[12px] font-medium">User Management</span>
+            </div>
+            <p className="text-[10px] text-[#6F7777] mb-4">
+              Manage user accounts, roles, and permissions
+            </p>
+            <div className="space-y-2">
+              <Button 
+                size="sm" 
+                className="w-full text-[10px] h-7"
+                onClick={() => handleSystemAction('User roles updated')}
+                disabled={isLoading}
               >
-                <span className="text-[12px] leading-none text-[#171717]">&gt;</span>
+                Update User Roles
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="w-full text-[10px] h-7"
+                onClick={() => handleSystemAction('User list exported')}
+                disabled={isLoading}
+              >
+                Export User List
               </Button>
             </div>
-          ) : (
-            <div className="p-5 flex items-center gap-3">
-              <div className="w-[27px] h-[27px] rounded-[2.432px] bg-[#0D1717] flex items-center justify-center">
-                <Image src="/star.svg" alt="Logo" width={20} height={20} />
-              </div>
-              <div className="pt-[2px]">
-                <p className="font-sans text-[10px] leading-[1.3em]">ThinklyLabs</p>
-                <p className="font-sans text-[10px] leading-[1.3em]">Trial account</p>
-              </div>
-              <div className="ml-auto">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCollapsed(true)}
-                  className="inline-flex items-center justify-center w-[27px] h-[27px] rounded-[5px] bg-[#FCF9F5] border border-[#171717] [border-width:0.5px] p-0"
-                  aria-label="Collapse sidebar"
-                >
-                  <span className="text-[12px] leading-none text-[#171717]">&lt;</span>
-                </Button>
-              </div>
+          </div>
+
+          <div className="h-[200px] rounded-[10px] bg-white border border-[#171717]/20 [border-width:0.5px] shadow-[0_6px_20px_rgba(13,23,23,0.08)] p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Settings className="w-5 h-5 text-[#1DC6A1]" />
+              <span className="text-[12px] font-medium">System Settings</span>
             </div>
-          )}
+            <p className="text-[10px] text-[#6F7777] mb-4">
+              Configure system parameters and maintenance
+            </p>
+            <div className="space-y-2">
+              <Button 
+                size="sm" 
+                className="w-full text-[10px] h-7"
+                onClick={() => handleSystemAction('System backup completed')}
+                disabled={isLoading}
+              >
+                Create Backup
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="w-full text-[10px] h-7"
+                onClick={() => handleSystemAction('Cache cleared')}
+                disabled={isLoading}
+              >
+                Clear Cache
+              </Button>
+            </div>
+          </div>
+        </div>
 
-          {/* push footer to bottom */}
-          <div className="flex-1" />
+        {/* Recent Activity */}
+        <h2 className={`${oldStandard.className} text-[16px] leading-[1.236em] mt-[55px]`}>
+          Recent Activity
+        </h2>
 
-          {!collapsed && (
-            <div className="px-5 mb-3">
-              <div className="w-[220px] h-[251px] rounded-[5px] border border-[#0D1717]/100 [border-width:0.2px] shadow-[0_4px_10px_rgba(13,23,23,0.2)] p-[18px_12px] flex flex-col gap-[6px] bg-[#FCF9F5] relative">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCollapsed(true)}
-                  className="absolute left-[6px] top-[7px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[4px] bg-[#FCF9F5] border border-[#171717] [border-width:0.5px] p-0"
-                  aria-label="Collapse sidebar"
-                >
-                  <span className="text-[12px] leading-none text-[#171717]">×</span>
-                </Button>
-                <h2 className="text-center text-[14px] py-4 leading-[1.236em]">Complete your onboarding</h2>
-                <p className="text-[10px] leading-[1.3em] w-[188px]">
-                  Connect your applications to help us keep the knowledge base updated
-                </p>
-                <div className="w-[88px] h-[12px] bg-[#FCF9F5]" />
-
-                <div className="flex items-center gap-[7px] w-[163px] h-[13px]">
-                  <div className="w-[11px] h-[11px] rounded-full border border-[#6F7777]/100 [border-width:0.4px]" />
-                  <span className="text-[10px] leading-[1.3em] text-[#6F7777] w-[145px]">Explore the knowledge base</span>
-                </div>
-                <div className="flex items-center gap-[7px] w-[163px] h-[13px]">
-                  <div className="w-[11px] h-[11px] rounded-full border border-[#6F7777]/100 [border-width:0.4px]" />
-                  <span className="text-[10px] leading-[1.3em] text-[#6F7777] w-[145px]">Connect your accounts</span>
-                </div>
-                <div className="flex items-center gap-[7px] w-[163px] h-[13px]">
-                  <div className="w-[11px] h-[11px] rounded-full border border-[#6F7777]/100 [border-width:0.4px]" />
-                  <span className="text-[10px] leading-[1.3em] text-[#6F7777] w-[145px]">Generate first posts</span>
-                </div>
-                <div className="flex items-center gap-[7px] w-[163px] h-[13px]">
-                  <div className="w-[11px] h-[11px] rounded-full border border-[#6F7777]/100 [border-width:0.4px]" />
-                  <span className="text-[10px] leading-[1.3em] text-[#6F7777] w-[145px]">Load your engagement feed</span>
-                </div>
-                <div className="flex items-center gap-[7px] w-[163px] h-[13px]">
-                  <div className="w-[11px] h-[11px] rounded-full border border-[#6F7777]/100 [border-width:0.4px]" />
-                  <span className="text-[10px] leading-[1.3em] text-[#6F7777] w-[145px]">Load your leads</span>
-                </div>
-
-                <div className="flex items-center gap-[3px] mt-2">
-                  <div className="w-[175px] h-[4px] rounded-[10px] bg-[#B1DAD0] overflow-hidden">
-                    <div className="h-full w-[7px] bg-[#1DC6A1]" />
+        <div className="mt-[20px] rounded-[10px] bg-white border border-[#171717]/20 [border-width:0.5px] shadow-[0_6px_20px_rgba(13,23,23,0.08)] p-4">
+          <div className="space-y-3">
+            {recentActivities.map((activity, index) => (
+              <div key={index} className="flex items-center justify-between py-2 border-b border-[#171717]/10 last:border-b-0">
+                <div className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full ${
+                    activity.type === 'admin' ? 'bg-[#1DC6A1]' : 'bg-[#6F7777]'
+                  }`} />
+                  <div>
+                    <p className="text-[12px] font-medium">{activity.user}</p>
+                    <p className="text-[10px] text-[#6F7777]">{activity.action}</p>
                   </div>
-                  <span className="text-[8px] leading-[1.3em] text-[#6F7777] w-[19px]">0%</span>
                 </div>
+                <span className="text-[10px] text-[#6F7777]">{activity.time}</span>
               </div>
+            ))}
+          </div>
+        </div>
+
+        {/* System Status */}
+        <h2 className={`${oldStandard.className} text-[16px] leading-[1.236em] mt-[55px]`}>
+          System Status
+        </h2>
+
+        <div className="mt-[20px] grid grid-cols-1 md:grid-cols-3 gap-[22px]">
+          <div className="h-[120px] rounded-[10px] bg-[#1DC6A1]/10 border border-[#1DC6A1]/20 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 rounded-full bg-[#1DC6A1]" />
+              <span className="text-[12px] font-medium text-[#1DC6A1]">Database</span>
             </div>
-          )}
-
-          <div className="mt-auto p-5 flex items-center gap-2">
-            <div className="w-[27px] h-[27px] rounded-[5px] bg-[#B1DAD0]" />
-            {!collapsed && (
-              <div>
-                <p className="font-sans text-[10px] leading-[1.3em]">Vedant</p>
-                <p className="font-sans text-[10px] leading-[1.3em]">vedant@thinklylabs.com</p>
-              </div>
-            )}
-          </div>
-        </aside>
-
-        <section className="flex-1 relative px-6 md:px-10">
-          <div className="absolute right-6 top-6 md:right-10 md:top-[23px]">
-            <LogoutButton />
-          </div>
-          <div className="mt-6 md:mt-[23px] flex items-center gap-3">
-            <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Library</span>
+            <p className="text-[10px] text-[#6F7777]">All systems operational</p>
+            <p className="text-[14px] font-bold text-[#1DC6A1] mt-2">99.9% Uptime</p>
           </div>
 
-          <h1 className={`${oldStandard.className} text-[30px] leading-[1.236em] mt-10 md:mt-[30px]`}>
-            Admin Panel
-          </h1>
+          <div className="h-[120px] rounded-[10px] bg-[#1DC6A1]/10 border border-[#1DC6A1]/20 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 rounded-full bg-[#1DC6A1]" />
+              <span className="text-[12px] font-medium text-[#1DC6A1]">API Services</span>
+            </div>
+            <p className="text-[10px] text-[#6F7777]">All endpoints responding</p>
+            <p className="text-[14px] font-bold text-[#1DC6A1] mt-2">Response: 45ms</p>
+          </div>
 
-          <div className="mt-6 md:mt-10" />
-        </section>
+          <div className="h-[120px] rounded-[10px] bg-[#FFA500]/10 border border-[#FFA500]/20 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 rounded-full bg-[#FFA500]" />
+              <span className="text-[12px] font-medium text-[#FFA500]">Storage</span>
+            </div>
+            <p className="text-[10px] text-[#6F7777]">Approaching capacity limit</p>
+            <p className="text-[14px] font-bold text-[#FFA500] mt-2">85% Used</p>
+          </div>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
 

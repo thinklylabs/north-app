@@ -94,6 +94,7 @@ export async function POST(req: NextRequest) {
       object: profile?.object || "UserProfile",
       provider: profile?.provider || "LINKEDIN",
       provider_id: profile?.provider_id || identifier,
+      account_id: accountIdToUse,
       public_identifier: profile?.public_identifier || null,
       member_urn: profile?.member_urn || null,
       first_name: profile?.first_name || null,

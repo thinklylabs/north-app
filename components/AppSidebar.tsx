@@ -66,6 +66,11 @@ const navigationItems = [
     url: "/chat",
     icon: MessageSquare,
   },
+  {
+    title: "Settings",
+    url: "/settings",
+    icon: MessageSquare,
+  },
 ];
 
 export function AppSidebar() {

@@ -33,6 +33,10 @@ export default function IdeasPage() {
   const [ideas, setIdeas] = useState<IdeaRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<IdeaRow | null>(null);
+  const [editTopic, setEditTopic] = useState<string>("");
+  const [editEq, setEditEq] = useState<string>("");
+  const [editTakeaway, setEditTakeaway] = useState<string>("");
+  const [saving, setSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIdeas, setSelectedIdeas] = useState<Set<number>>(new Set());
   const [sortField, setSortField] = useState<'created_at' | 'status'>('created_at');
@@ -422,7 +426,12 @@ export default function IdeasPage() {
                         <tr
                           key={idea.id}
                           className="border-t border-[#171717]/10 hover:bg-[#F9F6F1] cursor-pointer"
-                          onClick={() => setSelected(idea)}
+                          onClick={() => {
+                            setSelected(idea)
+                            setEditTopic(idea.idea_topic || '')
+                            setEditEq(idea.idea_eq || '')
+                            setEditTakeaway(idea.idea_takeaway || '')
+                          }}
                         >
                           <td className="px-4 py-3 align-top" onClick={(e) => e.stopPropagation()}>
                             <input
@@ -566,31 +575,104 @@ export default function IdeasPage() {
 
           {selected && (
             <div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-[#0D1717]/20 backdrop-blur-[6px] p-4"
               onClick={() => setSelected(null)}
             >
               <div
-                className="w-full max-w-[640px] rounded-[10px] bg-white shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px]"
+                className="w-full max-w-[920px] rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px]"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3">
-                  <h3 className="text-[16px] font-medium text-[#0D1717]">{selected.idea_topic || 'Untitled idea'}</h3>
+                {/* Header */}
+                <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5] rounded-t-[10px]">
+                  <h3 className={`${oldStandard.className} text-[16px] leading-[1.3em] text-[#0D1717] font-bold`}>Idea</h3>
                   <button
                     type="button"
-                    className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1]"
+                    className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer"
                     aria-label="Close"
                     onClick={() => setSelected(null)}
                   >
                     ✕
                   </button>
                 </div>
-                <div className="px-5 pb-5 text-[12px] leading-[1.7em] text-[#0D1717] space-y-3">
-                  {selected.idea_eq && (
-                    <p><span className="text-[#6F7777]">EQ:</span> {selected.idea_eq}</p>
-                  )}
-                  {selected.idea_takeaway && (
-                    <p><span className="text-[#6F7777]">Takeaway:</span> {selected.idea_takeaway}</p>
-                  )}
+                {/* Editable content */}
+                <div className="px-5 py-4 grid grid-cols-1 gap-3">
+                  <div>
+                    <div className={`mb-1.5 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Topic</div>
+                    <input
+                      value={editTopic}
+                      onChange={(e) => setEditTopic(e.target.value)}
+                      placeholder="Topic"
+                      className={`w-full text-[12px] text-[#0D1717] rounded-[8px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] px-3 py-2.5 outline-none`}
+                    />
+                  </div>
+                  <div>
+                    <div className={`mb-1.5 text-[12px] text-[#0D1717] ${oldStandard.className}`}>EQ</div>
+                    <textarea
+                      value={editEq}
+                      onChange={(e) => setEditEq(e.target.value)}
+                      placeholder="EQ"
+                      className={`w-full h-[100px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none`}
+                    />
+                  </div>
+                  <div>
+                    <div className={`mb-1.5 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Takeaway</div>
+                    <textarea
+                      value={editTakeaway}
+                      onChange={(e) => setEditTakeaway(e.target.value)}
+                      placeholder="Takeaway"
+                      className={`w-full h-[100px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none`}
+                    />
+                  </div>
+                </div>
+                {/* Footer Buttons */}
+                <div className="px-5 pb-4 flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    className="h-[30px] px-3 rounded-[6px] bg-[#1DC6A1] text-white hover:bg-[#19b391] text-[12px] cursor-pointer"
+                    disabled={saving}
+                    onClick={async () => {
+                      if (!selected) return
+                      const supabase = createClient()
+                      try {
+                        setSaving(true)
+                        const { error } = await supabase
+                          .from('ideas')
+                          .update({ idea_topic: editTopic, idea_eq: editEq, idea_takeaway: editTakeaway })
+                          .eq('id', selected.id)
+                        if (error) throw error
+                        setIdeas((prev) => prev.map((i) => i.id === selected.id ? { ...i, idea_topic: editTopic, idea_eq: editEq, idea_takeaway: editTakeaway } : i))
+                        toast.success('Idea saved')
+                        setSelected(null)
+                      } catch (e) {
+                        console.error(e)
+                        toast.error('Failed to save')
+                      } finally {
+                        setSaving(false)
+                      }
+                    }}
+                  >
+                    {saving ? 'Saving…' : 'Save'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-[30px] px-3 rounded-[6px] border border-[#171717]/20 [border-width:0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[12px] cursor-pointer"
+                    onClick={async () => {
+                      const parts: string[] = []
+                      if (editTopic) parts.push(editTopic)
+                      if (editEq) parts.push(`EQ: ${editEq}`)
+                      if (editTakeaway) parts.push(`Takeaway: ${editTakeaway}`)
+                      const text = parts.join('\n')
+                      try {
+                        await navigator.clipboard.writeText(text)
+                        toast.success('Copied to clipboard')
+                      } catch {
+                        toast.error('Failed to copy')
+                      }
+                    }}
+                  >
+                    Copy
+                  </Button>
                 </div>
               </div>
             </div>
@@ -602,7 +684,7 @@ export default function IdeasPage() {
               className="absolute inset-0 bg-black/20 backdrop-blur-[6px]"
               onClick={() => setFeedbackOpen(false)}
             />
-            <div className="relative z-10 w-[640px] max-w-[92vw] rounded-[8px] bg-white shadow-xl border border-[#0D1717]/10">
+            <div className="relative z-10 w-[640px] max-w-[92vw] rounded-[8px] bg-[#FCF9F5] shadow-xl border border-[#0D1717]/10">
               <div className="p-6">
                 <div className="flex items-start justify-between">
                   <div>

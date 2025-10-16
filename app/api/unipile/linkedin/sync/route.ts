@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+import { processLinkedInProfile } from "@/lib/processLinkedInProfile";
 
 function getAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -67,17 +68,27 @@ export async function POST(req: NextRequest) {
     }
     const profile = Array.isArray(profJson) ? profJson[0] : profJson;
 
-    // Store full JSON blob
+    // Store full JSON blob and process to document_sections
     try {
       const supaForBlob = getAdmin();
-      await supaForBlob
+      const { data: inserted, error: insertErr } = await supaForBlob
         .from("linkedin_profile_json")
         .insert({
           user_id: user_id || null,
           account_id: accountIdToUse,
           identifier,
           profile_json: profile,
-        } as any);
+        } as any)
+        .select('id')
+        .single()
+
+      if (!insertErr && inserted?.id) {
+        try {
+          await processLinkedInProfile(inserted.id)
+        } catch (procErr: any) {
+          console.warn("[linkedin/sync] profile processing error", procErr?.message)
+        }
+      }
     } catch (e: any) {
       // ignore blob insert failure
     }
@@ -128,7 +139,77 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, provider_id: payload.provider_id });
+    // After successful profile upsert, attempt writing_style generation to ensure it runs during sync too
+    try {
+      const openaiKey = process.env.OPENAI_API_KEY || "";
+      if (!openaiKey) {
+        console.warn("[linkedin/sync] OPENAI_API_KEY missing; skipping writing style generation");
+        return NextResponse.json({ ok: true, provider_id: payload.provider_id, skipped: "OPENAI_API_KEY missing" });
+      }
+
+      const postsUrl = `${baseUrl}/api/v1/users/${encodeURIComponent(identifier)}\
+/posts?account_id=${encodeURIComponent(accountIdToUse)}`;
+      console.log("[linkedin/sync] fetching posts", { postsUrl });
+      const postsResp = await fetch(postsUrl, {
+        method: "GET",
+        headers: { "X-API-KEY": apiKey, accept: "application/json" },
+        cache: "no-store",
+      });
+      const postsText = await postsResp.text();
+      console.log("[linkedin/sync] posts response", { status: postsResp.status, statusText: postsResp.statusText, bodySample: postsText?.slice(0, 400) });
+      if (!postsResp.ok) {
+        return NextResponse.json({ ok: true, provider_id: payload.provider_id, posts_error: `${postsResp.status} ${postsText}` });
+      }
+      let postsJson: any = null;
+      try { postsJson = postsText ? JSON.parse(postsText) : null; } catch (e: any) {
+        console.error("[linkedin/sync] posts JSON parse error", e?.message);
+        return NextResponse.json({ ok: true, provider_id: payload.provider_id, posts_parse_error: e?.message });
+      }
+
+      const items: any[] = Array.isArray(postsJson)
+        ? postsJson
+        : Array.isArray(postsJson?.items)
+          ? postsJson.items
+          : [];
+      const recent10 = items.slice(0, 10);
+      console.log("[linkedin/sync] posts parsed", { totalItems: items.length, recent10: recent10.length });
+
+      const postsForLLM = recent10.map((p: any) => ({
+        id: String(p?.id ?? p?.social_id ?? ""),
+        date: p?.parsed_datetime || p?.date || null,
+        text: String(p?.text || ""),
+        reaction_counter: typeof p?.reaction_counter === "number" ? p.reaction_counter : null,
+        comment_counter: typeof p?.comment_counter === "number" ? p.comment_counter : null,
+        repost_counter: typeof p?.repost_counter === "number" ? p.repost_counter : null,
+        impressions_counter: typeof p?.impressions_counter === "number" ? p.impressions_counter : null,
+        is_repost: !!p?.is_repost,
+        mentions_count: Array.isArray(p?.mentions) ? p.mentions.length : 0,
+        attachments_count: Array.isArray(p?.attachments) ? p.attachments.length : 0,
+        share_url: p?.share_url || null,
+      }));
+
+      const style = await generateWritingStyleSync(postsForLLM, openaiKey);
+      console.log("[linkedin/sync] OpenAI style generated", { hasStyle: !!style, keys: style ? Object.keys(style) : [] });
+
+      if (style) {
+        const { error: updateErr } = await supa
+          .from("linkedin_users")
+          .update({ writing_style: style })
+          .eq("provider_id", identifier)
+          .eq("account_id", accountIdToUse);
+        if (updateErr) {
+          console.error("[linkedin/sync] writing_style update error", updateErr.message);
+          return NextResponse.json({ ok: true, provider_id: payload.provider_id, writing_style_update_error: updateErr.message });
+        }
+        console.log("[linkedin/sync] writing_style saved", { provider_id: identifier, account_id: accountIdToUse });
+        return NextResponse.json({ ok: true, provider_id: payload.provider_id, writing_style_saved: true });
+      }
+
+      return NextResponse.json({ ok: true, provider_id: payload.provider_id, writing_style_saved: false });
+    } catch (e: any) {
+      console.error("[linkedin/sync] writing style generation error", e?.message);
+      return NextResponse.json({ ok: true, provider_id: payload.provider_id, writing_style_error: e?.message || "error" });
+    }
   } catch (e: any) {
     console.error("[linkedin/sync] unhandled error", e);
     return NextResponse.json({ error: e?.message || "error" }, { status: 500 });
@@ -136,3 +217,76 @@ export async function POST(req: NextRequest) {
 }
 
 
+
+async function generateWritingStyleSync(posts: any[], openaiKey: string) {
+  const contentSample = posts.map((p: any, i: number) => ({
+    i,
+    date: p.date,
+    text: p.text?.slice(0, 3000) || "",
+    reactions: p.reaction_counter,
+    comments: p.comment_counter,
+    reposts: p.repost_counter,
+    impressions: p.impressions_counter,
+    is_repost: p.is_repost,
+    mentions_count: p.mentions_count,
+    attachments_count: p.attachments_count,
+  }));
+
+  const system = [
+    "You are an expert social writing-style analyst.",
+    "Given up to 10 LinkedIn posts, infer the author's writing style in a concise, re-usable, structured JSON profile.",
+    "Focus on tone, formality, typical length, vocabulary, sentence structure, punctuation/emoji use, hashtag usage, calls-to-action, recurring topics/themes, and 8-12 style rules the author tends to follow.",
+    "Keep the profile actionable and not tied to specific post content; do not include personally identifiable information.",
+  ].join(" ");
+
+  const user = JSON.stringify({
+    instructions: "Infer the author's writing style from these posts.",
+    posts: contentSample,
+    output_schema: {
+      style_summary: "string",
+      tone: "string",
+      formality: "string",
+      typical_length: "string",
+      vocabulary: "string",
+      sentence_structure: "string",
+      punctuation_emojis: "string",
+      hashtags_usage: "string",
+      calls_to_action: "string",
+      recurring_topics: ["string"],
+      style_rules: ["string"],
+    },
+  });
+
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${openaiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      temperature: 0.3,
+      response_format: { type: "json_object" },
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    console.error("[linkedin/sync] OpenAI error", { status: res.status, errSample: errText?.slice(0, 400) });
+    throw new Error(`OpenAI error ${res.status}: ${errText}`);
+  }
+  const json = await res.json();
+  const content: string | undefined = json?.choices?.[0]?.message?.content;
+  console.log("[linkedin/sync] OpenAI response received", { hasContent: !!content, contentSample: content ? content.slice(0, 200) : null });
+  if (!content) return null;
+
+  try {
+    return JSON.parse(content);
+  } catch {
+    return { style_summary: content } as any;
+  }
+}

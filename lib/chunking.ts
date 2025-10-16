@@ -1,4 +1,4 @@
-type SourceType = 'thoughts' | 'slack_messages' | 'substack_feeds' | 'files' | 'notion' | 'tldv'
+type SourceType = 'thoughts' | 'slack_messages' | 'substack_feeds' | 'files' | 'notion' | 'tldv' | 'linkedin_profile'
 
 export interface Chunk {
   content: string
@@ -32,6 +32,15 @@ export function chunkBySourceType(
       })
     case 'tldv':
       return chunkTldvTranscript(content, metadata)
+    case 'linkedin_profile':
+      return chunkGeneric(content, metadata, {
+        type: 'linkedin_profile',
+        identifier: metadata?.identifier,
+        account_id: metadata?.account_id,
+        provider_id: metadata?.provider_id,
+        first_name: metadata?.first_name,
+        last_name: metadata?.last_name,
+      })
     case 'thoughts':
     default:
       return chunkGeneric(content, metadata, {

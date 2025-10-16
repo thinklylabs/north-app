@@ -3,9 +3,9 @@
 import { Old_Standard_TT } from "next/font/google";
 import { Button } from "@/components/ui/button";
 import LogoutButton from "@/components/LogoutButton";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Copy, Trash2, ArrowUpDown, Filter } from "lucide-react";
+import { Copy, Trash2, ArrowUpDown, Filter, Cloud, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
+const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: ["400", "700"] });
 
 type PostRow = {
   id: number;
@@ -30,8 +30,14 @@ type PostRow = {
 export default function PostsPage() {
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<PostRow[]>([]);
-  const [selectedText, setSelectedText] = useState<string | null>(null);
-  const [selectedTitle, setSelectedTitle] = useState<string>("");
+  const [selectedRow, setSelectedRow] = useState<PostRow | null>(null);
+  const [editHook, setEditHook] = useState<string>("");
+  const [editContent, setEditContent] = useState<string>("");
+  const [editFeedback, setEditFeedback] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [sendingFeedback, setSendingFeedback] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPosts, setSelectedPosts] = useState<Set<number>>(new Set());
   const [sortField, setSortField] = useState<'created_at' | 'status'>('created_at');
@@ -427,9 +433,11 @@ export default function PostsPage() {
                               className="text-[12px] text-[#0D1717] truncate cursor-pointer"
                               title={hook}
                               onClick={() => {
-                                if (!hook) return;
-                                setSelectedTitle("Hook");
-                                setSelectedText(hook);
+                                setSelectedRow(row);
+                                setEditHook(hook);
+                                setEditContent(content);
+                                setEditFeedback("");
+                                setImagePreview(null);
                               }}
                             >
                               {hook}
@@ -460,9 +468,11 @@ export default function PostsPage() {
                               className="text-[12px] text-[#0D1717] truncate cursor-pointer"
                               title={content}
                               onClick={() => {
-                                if (!content) return;
-                                setSelectedTitle("Post");
-                                setSelectedText(content);
+                                setSelectedRow(row);
+                                setEditHook(hook);
+                                setEditContent(content);
+                                setEditFeedback("");
+                                setImagePreview(null);
                               }}
                             >
                               {content}
@@ -522,7 +532,7 @@ export default function PostsPage() {
                   <Button
                     variant="ghost"
                     type="button"
-                    className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50"
+                    className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50 cursor-pointer"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     aria-label="Previous page"
@@ -535,9 +545,9 @@ export default function PostsPage() {
                   <Button
                     variant="ghost"
                     type="button"
-                    className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50"
-                    onClick={() => setCurrentPage((p) => Math.min(Math.ceil(getFilteredAndSortedPosts().length / itemsPerPage), p + 1))}
-                    disabled={currentPage >= Math.ceil(getFilteredAndSortedPosts().length / itemsPerPage)}
+                    className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50 cursor-pointer"
+                    onClick={() => setCurrentPage((p) => Math.min(Math.ceil(posts.length / itemsPerPage), p + 1))}
+                    disabled={currentPage >= Math.ceil(posts.length / itemsPerPage)}
                     aria-label="Next page"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -548,46 +558,192 @@ export default function PostsPage() {
           )}
         </div>
 
-        {selectedText && (
+        {selectedRow && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-            onClick={() => setSelectedText(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#0D1717]/20 backdrop-blur-[6px] p-4"
+            onClick={() => setSelectedRow(null)}
           >
             <div
-              className="w-full max-w-[720px] rounded-[10px] bg-white shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px]"
+              className="w-full max-w-[920px] rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px]"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3">
-                <h3 className="text-[16px] font-medium text-[#0D1717]">{selectedTitle}</h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    aria-label="Copy"
-                    title="Copy"
-                    className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1]"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(selectedText || "");
-                        toast.success('Copied to clipboard');
-                      } catch {
-                        toast.error('Failed to copy');
-                      }
-                    }}
-                  >
-                    <Copy className="w-[12px] h-[12px]" />
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1]"
-                    aria-label="Close"
-                    onClick={() => setSelectedText(null)}
-                  >
-                    ✕
-                  </button>
+              {/* Header */}
+              <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5] rounded-t-[10px]">
+                <h3 className={`${oldStandard.className} text-[16px] leading-[1.3em] text-[#0D1717] font-bold`}>Post title</h3>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer"
+                  aria-label="Close"
+                  onClick={() => setSelectedRow(null)}
+                >
+                  ✕
+                </button>
+              </div>
+              {/* Content */}
+              <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Post</div>
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    placeholder="Write your post…"
+                    className={`w-full h-[180px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none focus:ring-0 ${oldStandard.className}`}
+                  />
+                  <div className={`mt-3 mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Hook</div>
+                  <input
+                    value={editHook}
+                    onChange={(e) => setEditHook(e.target.value)}
+                    placeholder="Hook"
+                    className={`w-full text-[12px] text-[#0D1717] rounded-[8px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] px-3 py-2.5 outline-none ${oldStandard.className}`}
+                  />
+
+                  {/* Upload area */}
+                  <div className="mt-3 rounded-[10px] border border-dashed border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-4 text-center">
+                    {imagePreview ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <img src={imagePreview} alt="Preview" className="max-h-[180px] rounded-[8px] object-contain" />
+                        <div className="flex items-center gap-2 justify-center">
+                          <Button
+                            type="button"
+                            className="h-[28px] px-3 rounded-[6px] border border-[#171717]/20 [border-width:0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[11px] cursor-pointer"
+                            onClick={() => setImagePreview(null)}
+                          >
+                            Remove
+                          </Button>
+                          <Button
+                            type="button"
+                            className="h-[28px] px-3 rounded-[6px] border border-[#1DC6A1] text-[#1DC6A1] bg-[#FCF9F5] hover:bg-[#EDE8E1] text-[11px] cursor-pointer"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            Replace image
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 text-[#0D1717]">
+                        <div className="w-[40px] h-[28px] rounded-[6px] flex items-center justify-center">
+                          <Cloud className="w-[26px] h-[26px]" color="#1DC6A1" />
+                        </div>
+                        <div className={`text-[11px] ${oldStandard.className} text-[#0D1717]`}>Choose a file or drag & drop it here</div>
+                        <Button
+                          type="button"
+                          className="mt-2 h-[28px] px-3 rounded-[6px] border border-[#171717]/20 [border-width:0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[11px] cursor-pointer"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          Upload
+                        </Button>
+                      </div>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files && e.target.files[0]
+                        if (!file) return
+                        const reader = new FileReader()
+                        reader.onload = () => setImagePreview(String(reader.result || ''))
+                        reader.readAsDataURL(file)
+                      }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Feedback for strategist</div>
+                  <div className="relative">
+                    <textarea
+                      value={editFeedback}
+                      onChange={(e) => setEditFeedback(e.target.value)}
+                      placeholder="Didn't like the post? Want some improvements, comment here, we will update the post in 24h"
+                      className={`w-full h-[220px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 pr-10 outline-none focus:ring-0 ${oldStandard.className}`}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Send feedback"
+                      className="absolute bottom-3 right-3 inline-flex items-center justify-center w-[28px] h-[28px] rounded-[6px] border border-[#1DC6A1] text-white bg-[#1DC6A1] hover:bg-[#19b391] cursor-pointer"
+                      onClick={async () => {
+                        if (!selectedRow || !editFeedback.trim() || sendingFeedback) return
+                        const supabase = createClient()
+                        const { data: { session } } = await supabase.auth.getSession()
+                        const token = session?.access_token
+                        if (!token) {
+                          toast.error('Not authenticated')
+                          return
+                        }
+                        try {
+                          setSendingFeedback(true)
+                          const res = await fetch('/api/feedbacks', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ feedback_for: 'post', target_id: selectedRow.id, feedback: editFeedback })
+                          })
+                          if (!res.ok) {
+                            const j = await res.json().catch(() => ({}))
+                            throw new Error(j.error || 'Failed to send feedback')
+                          }
+                          toast.success('Feedback sent')
+                          setEditFeedback('')
+                        } catch (e: any) {
+                          toast.error(e?.message || 'Failed to send feedback')
+                        } finally {
+                          setSendingFeedback(false)
+                        }
+                      }}
+                    >
+                      <ArrowRight className="w-[16px] h-[16px]" />
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="px-5 pb-5 text-[12px] leading-[1.7em] text-[#0D1717] whitespace-pre-wrap break-words">
-                {selectedText}
+              
+              {/* Footer Buttons */}
+              <div className="px-5 pb-5 flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  className="h-[30px] px-3 rounded-[6px] bg-[#1DC6A1] text-white hover:bg-[#19b391] text-[12px] cursor-pointer"
+                  disabled={saving}
+                  onClick={async () => {
+                    if (!selectedRow) return
+                    const supabase = createClient()
+                    try {
+                      setSaving(true)
+                      const { error } = await supabase
+                        .from('posts')
+                        .update({ post_hook: editHook, post_content: editContent })
+                        .eq('id', selectedRow.id)
+                      if (error) throw error
+                      setPosts((prev) => prev.map((p) => p.id === selectedRow.id ? { ...p, post_hook: editHook, post_content: editContent } : p))
+                      toast.success('Post saved')
+                      setSelectedRow(null)
+                    } catch (e) {
+                      console.error(e)
+                      toast.error('Failed to save post')
+                    } finally {
+                      setSaving(false)
+                    }
+                  }}
+                >
+                  {saving ? 'Saving…' : 'Save post'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-[30px] px-3 rounded-[6px] border border-[#171717]/20 [border-width:0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[12px] cursor-pointer"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(editContent || '')
+                      toast.success('Copied to clipboard')
+                    } catch {
+                      toast.error('Failed to copy')
+                    }
+                  }}
+                >
+                  Copy
+                </Button>
               </div>
             </div>
           </div>

@@ -1,6 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+<<<<<<< Updated upstream
+=======
+import { ROLES } from '@/lib/roles'
+>>>>>>> Stashed changes
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -43,13 +47,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/signin', request.url))
   }
 
+<<<<<<< Updated upstream
   // Role-based routing
   if (profile.role === 'admin') {
+=======
+  // Role-based routing with proper enum values
+  if (profile.role === ROLES.ADMIN) {
+>>>>>>> Stashed changes
     // Admin users should be redirected to /admin if they try to access /dashboard
     if (pathname === '/dashboard' || pathname === '/') {
       return NextResponse.redirect(new URL('/admin', request.url))
     }
+<<<<<<< Updated upstream
   } else if (profile.role === 'user') {
+=======
+  } else if (profile.role === ROLES.USER) {
+>>>>>>> Stashed changes
     // Regular users should be redirected to /dashboard if they try to access /admin
     if (pathname === '/admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url))

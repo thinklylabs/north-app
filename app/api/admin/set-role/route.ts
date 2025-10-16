@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+<<<<<<< Updated upstream
 import { UserRole } from '@/lib/auth'
+=======
+>>>>>>> Stashed changes
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,6 +25,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
+<<<<<<< Updated upstream
     const { userId, role }: { userId: string; role: UserRole } = await request.json()
 
     // Validate role is one of the allowed enum values
@@ -30,6 +34,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         error: 'Invalid userId or role. Role must be either "user" or "admin"' 
       }, { status: 400 })
+=======
+    const { userId, role } = await request.json()
+
+    if (!userId || !role || !['user', 'admin'].includes(role)) {
+      return NextResponse.json({ error: 'Invalid userId or role' }, { status: 400 })
+>>>>>>> Stashed changes
     }
 
     // Update user role
@@ -42,11 +52,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update role' }, { status: 500 })
     }
 
+<<<<<<< Updated upstream
     return NextResponse.json({ 
       success: true, 
       message: `Role updated to ${role}`,
       role 
     })
+=======
+    return NextResponse.json({ success: true, message: `Role updated to ${role}` })
+>>>>>>> Stashed changes
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

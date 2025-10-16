@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+<<<<<<< Updated upstream
 import { UserRole } from '@/lib/auth'
+=======
+>>>>>>> Stashed changes
 
 export async function POST() {
   try {
@@ -26,10 +29,16 @@ export async function POST() {
     }
 
     // Set default role as 'user' for all profiles without a role
+<<<<<<< Updated upstream
     const defaultRole: UserRole = 'user'
     const { error: updateError } = await supabase
       .from('profiles')
       .update({ role: defaultRole })
+=======
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ role: 'user' })
+>>>>>>> Stashed changes
       .is('role', null)
 
     if (updateError) {
@@ -39,8 +48,12 @@ export async function POST() {
     return NextResponse.json({ 
       success: true, 
       message: `Initialized roles for ${profiles.length} profiles`,
+<<<<<<< Updated upstream
       updatedCount: profiles.length,
       defaultRole
+=======
+      updatedCount: profiles.length
+>>>>>>> Stashed changes
     })
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

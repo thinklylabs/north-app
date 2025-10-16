@@ -1,0 +1,39 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { AdminSidebar } from "@/components/AdminSidebar";
+
+const SIDEBAR_HIDDEN_PATHS = [
+  "/signin",
+  "/signup", 
+  "/onboarding",
+  "/forgot-password",
+  "/reset-password",
+  "/auth/callback",
+  "/sso-callback"
+];
+
+export function ConditionalSidebar({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  
+  const shouldShowSidebar = pathname !== "/" && !SIDEBAR_HIDDEN_PATHS.some(path => 
+    pathname.startsWith(path)
+  );
+
+  const isAdminRoute = pathname.startsWith('/admin');
+
+  if (shouldShowSidebar) {
+    return (
+      <SidebarProvider>
+        {isAdminRoute ? <AdminSidebar /> : <AppSidebar />}
+        <main className="flex-1">
+          {children}
+        </main>
+      </SidebarProvider>
+    );
+  }
+
+  return <>{children}</>;
+}

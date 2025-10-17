@@ -46,6 +46,16 @@ const adminNavigationItems = [
     icon: Users,
   },
   {
+    title: "Posts",
+    url: "/admin/posts",
+    icon: FileText,
+  },
+  {
+    title: "Ideas",
+    url: "/admin/ideas",
+    icon: TrendingUp,
+  },
+  {
     title: "System Settings",
     url: "/admin/settings",
     icon: Settings,
@@ -56,8 +66,8 @@ const adminNavigationItems = [
     icon: BarChart3,
   },
   {
-    title: "Database",
-    url: "/admin/database",
+    title: "Onboarding DB",
+    url: "/admin/onboarding-db",
     icon: Database,
   },
   {
@@ -78,28 +88,28 @@ const adminNavigationItems = [
 ];
 
 // Regular platform navigation (for admin to access user features)
-const platformNavigationItems = [
-  {
-    title: "Posts",
-    url: "/posts",
-    icon: FileText,
-  },
-  {
-    title: "Ideas",
-    url: "/ideas",
-    icon: TrendingUp,
-  },
-  {
-    title: "Library",
-    url: "/library",
-    icon: MessageSquare,
-  },
-  {
-    title: "Chat",
-    url: "/chat",
-    icon: MessageSquare,
-  },
-];
+// const platformNavigationItems = [
+//   {
+//     title: "Posts",
+//     url: "/posts",
+//     icon: FileText,
+//   },
+//   {
+//     title: "Ideas",
+//     url: "/ideas",
+//     icon: TrendingUp,
+//   },
+//   {
+//     title: "Library",
+//     url: "/library",
+//     icon: MessageSquare,
+//   },
+//   {
+//     title: "Chat",
+//     url: "/chat",
+//     icon: MessageSquare,
+//   },
+// ];
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -144,7 +154,7 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Platform Section */}
+        {/* Platform Section
         <SidebarGroup>
           <SidebarGroupLabel className="text-[10px] font-medium text-[#6F7777] px-2">
             Platform Access
@@ -167,9 +177,9 @@ export function AdminSidebar() {
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
-        </SidebarGroup>
+        </SidebarGroup> */}
 
-        {/* Admin Stats Card */}
+        {/* Admin Stats Card
         <div className="px-3 py-4">
           <div className="w-full h-[200px] rounded-[5px] border border-[#0D1717]/100 [border-width:0.2px] shadow-[0_4px_10px_rgba(13,23,23,0.2)] p-[18px_12px] flex flex-col gap-[6px] bg-[#FCF9F5] relative group-data-[collapsible=icon]:hidden">
             <h2 className="text-center text-[14px] py-2 leading-[1.236em]">System Overview</h2>
@@ -199,7 +209,7 @@ export function AdminSidebar() {
               <span className="text-[8px] leading-[1.3em] text-[#6F7777] w-[19px]">85%</span>
             </div>
           </div>
-        </div>
+        </div> */}
       </SidebarContent>
 
       <SidebarFooter className="p-5">

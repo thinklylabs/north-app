@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { upsertCurrentUserProfile } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/client";
 import { Toaster, toast } from "sonner";
+ 
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
 
@@ -18,6 +19,9 @@ export default function Onboarding() {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState(1);
+  const [icp, setIcp] = useState("");
+  const [icpPainPoints, setIcpPainPoints] = useState("");
   
   const supabase = createClient();
   const router = useRouter();
@@ -67,108 +71,175 @@ export default function Onboarding() {
           Let’s get you started
         </h1>
 
-        <p className="font-sans mt-[50px] w-[171px] text-[12px] leading-[1.3em]">
-          Connect your LinkedIn account
-        </p>
-        <div className="mt-[10px] w-[326px]">
-          <Button
-            type="button"
-            className="w-full rounded-[5px] bg-[#1DC6A1] hover:bg-[#1DC6A1] flex items-center justify-center gap-[12px] py-[10px] px-[106px] h-auto cursor-pointer"
-            onClick={async () => {
-              try {
-                const { data: { session } } = await supabase.auth.getSession();
-                const res = await fetch("/api/unipile/linkedin/hosted-link", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-                  },
-                });
-                const json = await res.json();
-                if (!res.ok) {
-                  toast.error("Failed to start LinkedIn connect", { description: json?.error || "Please try again." });
-                  return;
-                }
-                if (json?.url) {
-                  window.location.href = json.url as string;
-                } else {
-                  toast.error("Hosted link missing", { description: "Please try again." });
-                }
-              } catch (e: any) {
-                toast.error("Something went wrong", { description: e?.message || "Please try again." });
-              }
-            }}
-          >
-            <div className="w-[10px] h-[10px]">
-              <Image src="/linkedin.svg" alt="LinkedIn" width={10} height={12} />
+        {/* Progress slider */}
+        <div className="mt-[14px] w-[326px] h-[6px] bg-[#E8E6E2] rounded-full overflow-hidden">
+          <div
+            className={`h-full bg-[#1DC6A1] transition-all duration-300`}
+            style={{ width: `${step === 1 ? 50 : 100}%` }}
+          />
+        </div>
+
+        {step === 1 && (
+          <>
+            <p className="font-sans mt-[50px] w-[171px] text-[12px] leading-[1.3em]">
+              Connect your LinkedIn account
+            </p>
+            <div className="mt-[10px] w-[326px]">
+              <Button
+                type="button"
+                className="w-full rounded-[5px] bg-[#1DC6A1] hover:bg-[#1DC6A1] flex items-center justify-center gap-[12px] py-[10px] px-[106px] h-auto cursor-pointer"
+                onClick={async () => {
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    const res = await fetch("/api/unipile/linkedin/hosted-link", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+                      },
+                    });
+                    const json = await res.json();
+                    if (!res.ok) {
+                      toast.error("Failed to start LinkedIn connect", { description: json?.error || "Please try again." });
+                      return;
+                    }
+                    if (json?.url) {
+                      window.location.href = json.url as string;
+                    } else {
+                      toast.error("Hosted link missing", { description: "Please try again." });
+                    }
+                  } catch (e: any) {
+                    toast.error("Something went wrong", { description: e?.message || "Please try again." });
+                  }
+                }}
+              >
+                <div className="w-[10px] h-[10px]">
+                  <Image src="/linkedin.svg" alt="LinkedIn" width={10} height={12} />
+                </div>
+                <span className="font-sans text-[11px] leading-[1.3em] text-white">Link your account</span>
+              </Button>
             </div>
-            <span className="font-sans text-[11px] leading-[1.3em] text-white">Link your account</span>
-          </Button>
-        </div>
 
+            <p className="font-sans mt-[24px] w-[71px] text-[12px] leading-[1.3em]">Website URL</p>
+            <Input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://www.thinklylabs.com/" className="mt-[7px] w-[326px] h-[30px] bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]" />
 
-        <p className="font-sans mt-[24px] w-[71px] text-[12px] leading-[1.3em]">Website URL</p>
-        <Input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://www.thinklylabs.com/" className="mt-[7px] w-[326px] h-[30px] bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]" />
+            <p className="font-sans mt-[24px] w-[88px] text-[12px] leading-[1.3em]">Company Name</p>
+            <Input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="ThinklyLabs" className="mt-[7px] w-[326px] h-[30px] bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]" />
 
-        <p className="font-sans mt-[24px] w-[88px] text-[12px] leading-[1.3em]">Company Name</p>
-        <Input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="ThinklyLabs" className="mt-[7px] w-[326px] h-[30px] bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]" />
+            <div className="mt-[60px] w-[326px] flex gap-2">
+              <Button
+                type="button"
+                disabled={submitting}
+                onClick={async () => {
+                  setShowToast(false);
+                  if (!websiteUrl || !companyName) {
+                    setShowToast(true);
+                    return;
+                  }
+                  setSubmitting(true);
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    const currentUrl = new URL(window.location.href);
+                    const unipileAccountId = currentUrl.searchParams.get("unipile_account_id")
+                      || (typeof window !== "undefined" ? localStorage.getItem("unipile_account_id") : null)
+                      || undefined;
+                    try {
+                      await fetch("/api/unipile/linkedin/sync", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+                        },
+                        body: JSON.stringify({
+                          account_id: unipileAccountId,
+                          user_id: session?.user?.id,
+                        }),
+                      });
+                    } catch { /* non-blocking */ }
+                    const res = await fetch("/api/profile/ingest", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+                      },
+                      body: JSON.stringify({ websiteUrl, companyName }),
+                    });
+                    if (!res.ok) {
+                      toast.error("Website analysis failed", { description: "Please try again in a moment." });
+                      return;
+                    }
+                    toast.success("Website analysis completed");
+                    setStep(2);
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+                className="w-full rounded-[5px] bg-[#1DC6A1] hover:bg-[#1DC6A1] px-[106px] py-[6px] h-auto disabled:opacity-60 cursor-pointer"
+              >
+                <span className="font-sans text-[12px] leading-[1.3em] text-white">{submitting ? "Saving..." : "Continue"}</span>
+              </Button>
+            </div>
+          </>
+        )}
 
-        <div className="mt-[60px] w-[326px]">
-          <Button
-            type="button"
-            disabled={submitting}
-            onClick={async () => {
-              setShowToast(false);
-              if (!websiteUrl || !companyName) {
-                setShowToast(true);
-                return;
-              }
-              setSubmitting(true);
-              try {
-                const { data: { session } } = await supabase.auth.getSession();
-                // Carry account_id from callback URL and pass user_id
-                const currentUrl = new URL(window.location.href);
-                const unipileAccountId = currentUrl.searchParams.get("unipile_account_id")
-                  || (typeof window !== "undefined" ? localStorage.getItem("unipile_account_id") : null)
-                  || undefined;
-                try {
-                  await fetch("/api/unipile/linkedin/sync", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-                    },
-                    body: JSON.stringify({
-                      account_id: unipileAccountId,
-                      user_id: session?.user?.id,
-                    }),
-                  });
-                } catch { /* non-blocking */ }
-                const res = await fetch("/api/profile/ingest", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-                  },
-                  body: JSON.stringify({ websiteUrl, companyName }),
-                });
-                if (!res.ok) {
-                  toast.error("Website analysis failed", { description: "Please try again in a moment." });
-                } else {
-                  // Website analysis toast only; navigation occurs after
-                  toast.success("Website analysis completed");
-                  // Navigate to dashboard after onboarding completes
-                  router.replace("/dashboard");
-                }
-              } finally {
-                setSubmitting(false);
-              }
-            }}
-            className="w-full rounded-[5px] bg-[#1DC6A1] hover:bg-[#1DC6A1] px-[106px] py-[6px] h-auto disabled:opacity-60 cursor-pointer"
-          >
-            <span className="font-sans text-[12px] leading-[1.3em] text-white">{submitting ? "Saving..." : "Start growing"}</span>
-          </Button>
-        </div>
+        {step === 2 && (
+          <>
+            <p className="font-sans mt-[50px] w-[171px] text-[12px] leading-[1.3em]">
+              Who is your ICP?
+            </p>
+            <textarea
+              value={icp}
+              onChange={(e) => setIcp(e.target.value)}
+              placeholder="e.g. B2B SaaS founders in fintech, 5–50 employees"
+              className="mt-[7px] w-[326px] min-h-[70px] bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] p-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]"
+            />
+
+            <p className="font-sans mt-[24px] w-[220px] text-[12px] leading-[1.3em]">Top pain points for your ICP</p>
+            <textarea
+              value={icpPainPoints}
+              onChange={(e) => setIcpPainPoints(e.target.value)}
+              placeholder="List 2-5 pain points..."
+              className="mt-[7px] w-[326px] min-h-[70px] bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] p-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]"
+            />
+
+            <div className="mt-[60px] w-[326px]">
+              <Button
+                type="button"
+                disabled={submitting}
+                onClick={async () => {
+                  if (!icp || !icpPainPoints) {
+                    toast.error("Please fill in your ICP and pain points");
+                    return;
+                  }
+                  setSubmitting(true);
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    const res = await fetch("/api/profile/icp", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+                      },
+                      body: JSON.stringify({ icp, icp_pain_points: icpPainPoints }),
+                    });
+                    if (!res.ok) {
+                      const json = await res.json().catch(() => ({}));
+                      toast.error("Failed to save ICP", { description: json?.error || "Please try again." });
+                      return;
+                    }
+                    toast.success("Saved your ICP details");
+                    router.replace("/dashboard");
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+                className="w-full rounded-[5px] bg-[#1DC6A1] hover:bg-[#1DC6A1] px-[106px] py-[6px] h-auto disabled:opacity-60 cursor-pointer"
+              >
+                <span className="font-sans text-[12px] leading-[1.3em] text-white">{submitting ? "Saving..." : "Finish"}</span>
+              </Button>
+            </div>
+          </>
+        )}
       </div>
       <div className="hidden md:block w-[624px] min-h-screen bg-[url('/signup-art.png')] bg-cover bg-center ml-auto rotate-180" />
 

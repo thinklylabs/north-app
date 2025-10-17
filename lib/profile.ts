@@ -10,6 +10,8 @@ export type ProfileRecord = {
   website_url: string | null;
   company_name: string | null;
   website_content: string | null;
+  icp?: string | null;
+  icp_pain_points?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -46,7 +48,7 @@ export async function upsertCurrentUserProfile(): Promise<{ ok: boolean; error?:
   // Read existing profile to avoid overwriting with nulls
   const { data: existing } = await supabase
     .from("profiles")
-    .select("id,email,first_name,last_name,website_url,company_name,website_content,created_at,updated_at")
+    .select("id,email,first_name,last_name,website_url,company_name,website_content,icp,icp_pain_points,created_at,updated_at")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -58,6 +60,8 @@ export async function upsertCurrentUserProfile(): Promise<{ ok: boolean; error?:
     website_url: existing?.website_url ?? null,
     company_name: existing?.company_name ?? null,
     website_content: existing?.website_content ?? null,
+    icp: existing?.icp ?? null,
+    icp_pain_points: existing?.icp_pain_points ?? null,
   };
 
   const { error } = await supabase.from("profiles").upsert(payload, {

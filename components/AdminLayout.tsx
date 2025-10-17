@@ -9,7 +9,7 @@ const ADMIN_PATHS = [
   "/admin/users",
   "/admin/settings", 
   "/admin/analytics",
-  "/admin/database",
+  "/admin/onboarding-db",
   "/admin/activity",
   "/admin/roles",
   "/admin/health"

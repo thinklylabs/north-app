@@ -104,7 +104,7 @@ async function fetchUserGeneratedContent(userId: string) {
   // Fetch user profile
   const { data: profile } = await supabase
     .from('profiles')
-    .select('first_name, last_name, company_name, website_content')
+    .select('first_name, last_name, company_name, website_content, icp, icp_pain_points, onboarding_summary')
     .eq('id', userId)
     .single()
 
@@ -138,6 +138,9 @@ function buildMemorySynthesisPrompt(
   const profileText = generatedContent.profile 
     ? `Name: ${generatedContent.profile.first_name || ''} ${generatedContent.profile.last_name || ''}
 Company: ${generatedContent.profile.company_name || 'N/A'}
+ICP: ${generatedContent.profile.icp || 'N/A'}
+ICP Pain Points: ${generatedContent.profile.icp_pain_points || 'N/A'}
+Onboarding Summary: ${generatedContent.profile.onboarding_summary || 'N/A'}
 Website Content: ${generatedContent.profile.website_content || 'N/A'}`
     : 'No profile information available'
 
@@ -162,6 +165,11 @@ Write a crisp memory summary (max 2000 chars) covering:
 - WHAT they're working on (goals, projects)
 - Key WINS and challenges
 - Interests and expertise areas
+- Who is their ICP and what would the ICP love reading about?
+- What would the ICP most resonate with when they read the content?
+- What are the key challenges of the ICP?
+- What are the key interests of the ICP?
+- What are the key expertise areas of the ICP?
 - Communication style
 - Main themes in their content
 

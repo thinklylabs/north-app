@@ -4,11 +4,12 @@ import { Old_Standard_TT } from "next/font/google";
 import { Button } from "@/components/ui/button";
 import LogoutButton from "@/components/LogoutButton";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Nango from "@nangohq/frontend";
 import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { toast, Toaster } from "sonner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Label } from "@/components/ui/label";
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
 
@@ -31,6 +32,15 @@ export default function LibraryPage() {
   const [tldvApiKey, setTldvApiKey] = useState("");
   const [tldvImportMessage, setTldvImportMessage] = useState("");
   const [tldvModalOpen, setTldvModalOpen] = useState(false);
+
+  // Context editor state
+  const [contextLoading, setContextLoading] = useState(false);
+  const [icp, setIcp] = useState("");
+  const [icpPainPoints, setIcpPainPoints] = useState("");
+  const [onboardingSummary, setOnboardingSummary] = useState("");
+  const [longTermMemory, setLongTermMemory] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingMemory, setSavingMemory] = useState(false);
 
   function openModal() {
     setIsModalOpen(true);
@@ -113,6 +123,47 @@ export default function LibraryPage() {
     setIsSubstackModalOpen(false);
     setSubstackImportMessage("");
   }
+
+  // Load context when tab switches to context
+  useEffect(() => {
+    async function run() {
+      if (activeTab !== 'context') return;
+      try {
+        setContextLoading(true);
+        const supabase = createSupabaseBrowserClient();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        const token = session?.access_token;
+        if (!token) throw new Error('You must be logged in');
+
+        const [pRes, mRes] = await Promise.all([
+          fetch('/api/profile/context', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/long-term-memory/get', { headers: { Authorization: `Bearer ${token}` } }),
+        ])
+
+        if (pRes.ok) {
+          const pJson = await pRes.json();
+          const p = pJson?.profile || {};
+          setIcp(p.icp || '');
+          setIcpPainPoints(p.icp_pain_points || '');
+          setOnboardingSummary(p.onboarding_summary || '');
+        }
+
+        if (mRes.ok) {
+          const mJson = await mRes.json();
+          const m = mJson?.memory || {};
+          setLongTermMemory(m.memory_content || '');
+        } else if (mRes.status === 404) {
+          setLongTermMemory('');
+        }
+      } catch {
+        // silent error
+      } finally {
+        setContextLoading(false);
+      }
+    }
+    run();
+  }, [activeTab]);
 
   function openAddContext() {
     setIsAddContextOpen(true);
@@ -559,35 +610,120 @@ export default function LibraryPage() {
               ))}
             </div>
           ) : (
-            // Sources view with dark accordion
-            <div className="mt-6">
-              <div className="rounded-[10px] bg-[#101617] text-white p-6">
-                {["Product Information", "Shipping Details", "Return Policy"].map((title, idx) => (
-                  <div key={title} className={idx > 0 ? "pt-5" : ""}>
-                    <button
-                      type="button"
-                      onClick={() => setExpandedIndex(expandedIndex === idx ? null : idx)}
-                      className="w-full flex items-center justify-between text-left"
-                    >
-                      <span className="text-[18px]">{title}</span>
-                      <span className="text-[18px]">{expandedIndex === idx ? "˄" : "˅"}</span>
-                    </button>
-                    {expandedIndex === idx && (
-                      <div className="mt-5 text-white/80 text-[18px] leading-[1.6]">
-                        <p>
-                          Our flagship product combines cutting-edge technology with sleek design. Built with premium materials,
-                          it offers unparalleled performance and reliability.
-                        </p>
-                        <p className="mt-6">
-                          Key features include advanced processing capabilities, and an intuitive user interface designed for both
-                          beginners and experts.
-                        </p>
-                        <div className="mt-6 h-px w-full bg-white/10" />
-                      </div>
-                    )}
-                    {idx < 2 && expandedIndex !== idx && <div className="mt-5 h-px w-full bg-white/10" />}
+            // Context view: editable fields
+            <div className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6 max-w-[1155px]">
+              <div className="rounded-[10px] bg-white border border-[#0D1717]/10 p-5">
+                <h3 className="text-[16px] text-[#0D1717]">Profile Context</h3>
+                <p className="text-[11px] text-[#0D1717]/70 mt-1">ICP, pain points and onboarding summary</p>
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <Label htmlFor="icp" className="text-[11px] text-[#0D1717]/80">ICP</Label>
+                    <textarea
+                      id="icp"
+                      value={icp}
+                      onChange={(e) => setIcp(e.target.value)}
+                      placeholder="Describe your ideal customer profile..."
+                      className="w-full h-[100px] rounded-[6px] border border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
+                    />
                   </div>
-                ))}
+                  <div>
+                    <Label htmlFor="icpPain" className="text-[11px] text-[#0D1717]/80">ICP Pain Points</Label>
+                    <textarea
+                      id="icpPain"
+                      value={icpPainPoints}
+                      onChange={(e) => setIcpPainPoints(e.target.value)}
+                      placeholder="What are their biggest pains?"
+                      className="w-full h-[100px] rounded-[6px] border border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="onboardingSummary" className="text-[11px] text-[#0D1717]/80">Onboarding Summary</Label>
+                    <textarea
+                      id="onboardingSummary"
+                      value={onboardingSummary}
+                      onChange={(e) => setOnboardingSummary(e.target.value)}
+                      placeholder="Brief summary captured during onboarding..."
+                      className="w-full h-[120px] rounded-[6px] border border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          setSavingProfile(true)
+                          const supabase = createSupabaseBrowserClient();
+                          const { data: { session }, error } = await supabase.auth.getSession();
+                          if (error) throw error;
+                          const token = session?.access_token;
+                          if (!token) throw new Error("You must be logged in");
+                          const res = await fetch('/api/profile/context', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                            body: JSON.stringify({ icp, icp_pain_points: icpPainPoints, onboarding_summary: onboardingSummary })
+                          })
+                          if (!res.ok) throw new Error((await res.json())?.error || 'Failed to save');
+                          toast.success('Profile context saved')
+                        } catch (e: any) {
+                          toast.error(e?.message || 'Failed to save')
+                        } finally {
+                          setSavingProfile(false)
+                        }
+                      }}
+                      disabled={savingProfile}
+                      className="h-[30px] rounded-[5px] bg-[#1DC6A1] hover:bg-[#19b391] text-white px-3 py-0 text-[10px] cursor-pointer disabled:opacity-60"
+                    >
+                      {savingProfile ? 'Saving…' : 'Save'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[10px] bg-white border border-[#0D1717]/10 p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-[16px] text-[#0D1717]">Long-term Memory</h3>
+                    <p className="text-[11px] text-[#0D1717]/70 mt-1">High-level summary used by the AI.</p>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <textarea
+                    value={longTermMemory}
+                    onChange={(e) => setLongTermMemory(e.target.value)}
+                    placeholder="Memory summary..."
+                    className="w-full h-[260px] rounded-[6px] border border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
+                  />
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        setSavingMemory(true)
+                        const supabase = createSupabaseBrowserClient();
+                        const { data: { session }, error } = await supabase.auth.getSession();
+                        if (error) throw error;
+                        const token = session?.access_token;
+                        if (!token) throw new Error("You must be logged in");
+                        const res = await fetch('/api/long-term-memory/get', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                          body: JSON.stringify({ memory_content: longTermMemory })
+                        })
+                        if (!res.ok) throw new Error((await res.json())?.error || 'Failed to save');
+                        toast.success('Long-term memory saved')
+                      } catch (e: any) {
+                        toast.error(e?.message || 'Failed to save')
+                      } finally {
+                        setSavingMemory(false)
+                      }
+                    }}
+                    disabled={savingMemory}
+                    className="h-[30px] rounded-[5px] bg-[#A4D6CB] hover:bg-[#97CFC3] text-[#0D1717] px-3 py-0 text-[10px] cursor-pointer disabled:opacity-60"
+                  >
+                    {savingMemory ? 'Saving…' : 'Save'}
+                  </Button>
+                </div>
               </div>
             </div>
           )}

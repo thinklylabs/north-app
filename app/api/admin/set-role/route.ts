@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { ROLES } from '@/lib/roles'
 
@@ -29,8 +30,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid userId or role. Must be "user" or "admin"' }, { status: 400 })
     }
 
-    // Update user role
-    const { error: updateError } = await supabase
+    // Update user role using admin client to bypass RLS
+    const admin = createAdminClient()
+    const { error: updateError } = await admin
       .from('profiles')
       .update({ role })
       .eq('id', userId)

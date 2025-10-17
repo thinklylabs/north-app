@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ROLES } from '@/lib/roles'
 
 export async function POST() {
@@ -11,8 +12,21 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get all profiles without a role set
-    const { data: profiles, error: fetchError } = await supabase
+    // Ensure caller is admin
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (currentProfile?.role !== ROLES.ADMIN) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+    }
+
+    const admin = createAdminClient()
+
+    // Get all profiles without a role set (bypass RLS)
+    const { data: profiles, error: fetchError } = await admin
       .from('profiles')
       .select('id, email, role')
       .is('role', null)
@@ -25,8 +39,8 @@ export async function POST() {
       return NextResponse.json({ message: 'No profiles need role initialization' })
     }
 
-    // Set default role as 'user' for all profiles without a role
-    const { error: updateError } = await supabase
+    // Set default role as 'user' for all profiles without a role (bypass RLS)
+    const { error: updateError } = await admin
       .from('profiles')
       .update({ role: ROLES.USER })
       .is('role', null)

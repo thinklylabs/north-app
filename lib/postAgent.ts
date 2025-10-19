@@ -1,6 +1,17 @@
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
 import { claudeMessage } from '@/lib/claude'
 
+type PostDraft = {
+  template_used: string
+  hook: string
+  post: string
+}
+
+type PostResponse = {
+  post_drafts: PostDraft[]
+  meta_summary: string
+}
+
 function getAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -8,28 +19,193 @@ function getAdmin() {
   return createSupabaseAdminClient(url, key)
 }
 
-function buildPostPrompt(hook: string, insight: any) {
+function cleanJsonResponse(response: string): string {
+  // Remove markdown code blocks
+  let cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+  
+  // Remove any text before the first { and after the last }
+  const firstBrace = cleaned.indexOf('{')
+  const lastBrace = cleaned.lastIndexOf('}')
+  
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    cleaned = cleaned.substring(firstBrace, lastBrace + 1)
+  }
+  
+  // Conservative cleaning - only fix obvious issues
+  cleaned = cleaned
+    .replace(/\n\s*\n/g, '\n') // Remove multiple newlines but preserve single ones
+    .replace(/\s+$/, '') // Remove trailing whitespace
+    .trim()
+  
+  return cleaned
+}
+
+function isValidJSON(str: string): boolean {
+  try {
+    JSON.parse(str)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function buildPostPrompt(idea_topic: string, idea_summary: string, idea_eq: string, idea_takeaway: string, hook: string, insight: any) {
   return [
-    'ROLE: Senior LinkedIn copywriter.',
+    '# 🧱 Post Curator (Builder Tone, Founder Voice)',
     '',
-    'TASK: Write ONE LinkedIn post that STARTS with the provided HOOK, then adds 2–4 short sentences that deliver clear value based on the insight.',
-    '- Length target: 400–600 characters (min 280, max 800).',
-    '- The HOOK must appear verbatim at the beginning of the post.',
-    '- Self-contained, ends with terminal punctuation.',
-    '- Absolutely no hashtags, no emojis, no lists. Plain text only.',
-    '- Keep it focused and concrete; avoid jargon.',
+    '## 🎯 Objective',
+    'Turn **`post_ideas`** (and optionally their RAG insights + hooks) into **4 polished, LinkedIn-ready drafts (160–180 words each)**.',
+    'Each draft should sound like a founder writing in public — **structured, specific, but human.**',
     '',
-    `HOOK:\n${hook.slice(0, 300)}`,
+    '---',
     '',
-    'INSIGHT (structure):',
+    '## 🧩 Templates Explained',
+    '',
+    '### 1. **Contrarian Hot Take**',
+    'Open with a sharp or unpopular opinion. Explain what most people miss.',
+    'Back it with 2–3 grounded examples or observations.',
+    'End with a blunt takeaway or question that challenges status quo.',
+    '',
+    '### 2. **How-To Workflow**',
+    'Frame as a quick playbook or operating principle. Hook with a result or speed claim.',
+    'Share 3–5 clear steps or actions. Mention a common pitfall.',
+    'Close by nudging readers to try it or comment.',
+    '',
+    '### 3. **Playbook SOP**',
+    'Show a repeatable process your team uses. Hook with a benefit.',
+    'Add a 1-line setup, then outline 3–6 actions or decisions.',
+    'Drop one outcome or metric. End with an invite to ask for details or playbook.',
+    '',
+    '### 4. **Ad Format Case Study**',
+    'Tell a mini experiment story. Hook with what you tested.',
+    'Share 3–5 findings (what worked, why, how). Drop one specific metric or result.',
+    'End with a call to try or DM for the framework.',
+    '',
+    '### 5. **Tool Tierlist**',
+    'Rank or categorize tools. Hook with "what we actually use" or "tools that didn\'t make the cut."',
+    'Share short S/A/B tier lines. Add one line on how to choose.',
+    'End by inviting readers to share their stack.',
+    '',
+    '### 6. **Persona Prompt**',
+    'Center around AI creative prompting. Hook with a common mistake.',
+    'Define a clear persona (role, goal, pain). Share the exact improved prompt.',
+    'End with an invite to share their own personas.',
+    '',
+    '### 7. **Long Form Story**',
+    'Tell a personal or founder story. Hook with a specific moment or realization.',
+    'Build in 2–3 short paras (setup → tension → shift).',
+    'End with a takeaway that feels earned, not generic.',
+    '',
+    '### 8. **Ops Culture**',
+    'Talk about building culture, rituals, or systems. Hook with a benefit or realization.',
+    'Share 3–5 specific initiatives or lessons.',
+    'End with a metric or reflection that shows impact.',
+    '',
+    '### 9. **Rapid Experiment**',
+    'Highlight iteration and speed. Hook with the number of experiments.',
+    'Share 2–3 variants or lessons. End with a short insight about learning velocity and a question to readers.',
+    '',
+    '### 10. **Giveaway Lead Magnet**',
+    'Announce or offer a free resource. Hook with "I\'m giving away X."',
+    'Share 2–3 things inside. Mention how to get it (comment, DM).',
+    'Keep it crisp and direct.',
+    '',
+    '---',
+    '',
+    '## 🧠 Analysis Rules',
+    '',
+    '### 🎣 Hooks',
+    'Across the 4 drafts:',
+    '- Ensure **hook variety:**',
+    '  1 stat/result → 1 imperative → 1 question/list → 1 contrarian/timeline',
+    '- Use hook text from the Hook Strategist output if available; else regenerate naturally.',
+    '',
+    '### 📈 Content Mix',
+    'Maintain a **60/20/20 ratio**:',
+    '- 2 tactical (workflow / playbook / case study)',
+    '- 1 contrarian',
+    '- 1 story / personal / ops',
+    '',
+    '### 💡 Topics',
+    'Across 4 drafts, cover at least 3 of:',
+    '- creative strategy or testing',
+    '- AI workflows',
+    '- metrics / measurement',
+    '- scaling playbooks',
+    '- agency ops',
+    '',
+    '### ✍️ Writing Style',
+    '- Short paragraphs (1–3 lines each).',
+    '- Use **→** or bullets for clarity in 2–3 drafts.',
+    '- Second-person voice ("you", "your") for connection.',
+    '- First-person authority ("i", "we") for credibility.',
+    '- 1–2 **ALLCAPS** words per post for emphasis (not gimmick).',
+    '- End each post with a **clean CTA**: comment, DM, share, or grounded opinion.',
+    '',
+    '---',
+    '',
+    '## 🧱 Requirements',
+    '',
+    '### 🧩 Logic',
+    '1. For each `post_idea`, pick the **single most fitting template** (state it in `template_used`).',
+    '2. Before writing, **justify the fit** — why this template best delivers that idea\'s value.',
+    '3. Use **Hook Strategist output** if available — else derive a natural hook.',
+    '4. Write **naturally**, not mechanically — no template headers or robotic transitions.',
+    '5. Embed **RAG insights conversationally** (facts, frameworks, or examples).',
+    '6. Apply **analysis rules** strictly for hook diversity, topic coverage, and writing style.',
+    '7. Each post should feel **distinct** in rhythm, pacing, and structure.',
+    '',
+    '### ⚙️ Hard Rules',
+    '- Exactly **4 drafts**, each **160–180 words**.',
+    '- Each draft must use a **different template** and **different hook type**.',
+    '- Output must include:',
+    '  - `template_used`',
+    '  - `hook`',
+    '  - `post`',
+    '- **No emojis. No hashtags. No filler.**',
+    '- Tone must stay **human, reflective, and specific** — avoid generic AI-smooth phrasing.',
+    '',
+    '---',
+    '',
+    '## 🧾 Output Format',
+    '',
+    '```json',
+    '{',
+    '  "post_drafts": [',
+    '    {',
+    '      "template_used": "string (name of the chosen template)",',
+    '      "hook": "string (1–2 sentence opening line used in post)",',
+    '      "post": "string (160–180 word LinkedIn-ready draft in builder tone)"',
+    '    }',
+    '  ],',
+    '  "meta_summary": "string (1–2 lines summarizing how templates, tone, and hooks were distributed for variety and conversion balance)"',
+    '}',
+    '```',
+    '',
+    'Post idea details:',
+    `Topic: "${idea_topic}"`,
+    `Summary: "${idea_summary}"`,
+    `Emotional angle: "${idea_eq}"`,
+    `Takeaway: "${idea_takeaway}"`,
+    `Hook: "${hook}"`,
+    '',
+    'RAG insights:',
     JSON.stringify(insight, null, 2).slice(0, 2000),
     '',
-    'Return only the post text (no title, no quotes). Ensure 280–800 characters total and include the hook at the start.'
+    'Return ONLY the JSON object.'
   ].join('\n')
 }
 
 export async function generatePostFromHookAndInsight(ideaId: number, insightId: number, postId: number): Promise<{ post: string }> {
   const db = getAdmin()
+
+  const { data: idea, error: ideaErr } = await db
+    .from('ideas')
+    .select('id, idea_topic, idea_summary, idea_eq, idea_takeaway')
+    .eq('id', ideaId)
+    .maybeSingle()
+  if (ideaErr) throw ideaErr
+  if (!idea) throw new Error('Idea not found')
 
   const { data: post, error: postErr } = await db
     .from('posts')
@@ -47,18 +223,89 @@ export async function generatePostFromHookAndInsight(ideaId: number, insightId: 
   if (insErr) throw insErr
   if (!insight) throw new Error('Insight not found')
 
-  const prompt = buildPostPrompt(String(post.post_hook || ''), insight.insight)
-  const raw = await claudeMessage(prompt)
-  let postText = ensureHookPresent(raw, String(post.post_hook || ''))
-  postText = enforceLengthAndCompleteness(postText, 500, 280, 800)
+  const prompt = buildPostPrompt(
+    String(idea.idea_topic || ''),
+    String(idea.idea_summary || ''),
+    String(idea.idea_eq || ''),
+    String(idea.idea_takeaway || ''),
+    String(post.post_hook || ''),
+    insight.insight
+  )
+  
+  const response = await claudeMessage(prompt)
+  
+  try {
+    const cleanResponse = cleanJsonResponse(response)
+    console.log('Raw Claude response:', response)
+    console.log('Cleaned response:', cleanResponse)
+    
+    if (!isValidJSON(cleanResponse)) {
+      throw new Error('Invalid JSON after cleaning')
+    }
+    
+    const parsed: PostResponse = JSON.parse(cleanResponse)
+    const firstPost = parsed.post_drafts[0]?.post || 'No post generated'
+    
+    const { error: updErr } = await db
+      .from('posts')
+      .update({ post_content: firstPost, insight_id: insightId })
+      .eq('id', postId)
+    if (updErr) throw updErr
 
-  const { error: updErr } = await db
-    .from('posts')
-    .update({ post_content: postText, insight_id: insightId })
-    .eq('id', postId)
-  if (updErr) throw updErr
+    return { post: firstPost }
+  } catch (error) {
+    console.error('Failed to parse post response:', error)
+    console.error('Raw response:', response)
+    
+    // Enhanced fallback with retry
+    const retryPrompt = `Return ONLY valid JSON in this exact format:
+{
+  "post_drafts": [
+    {
+      "template_used": "template name",
+      "hook": "hook text",
+      "post": "post content"
+    }
+  ],
+  "meta_summary": "brief summary"
+}
 
-  return { post: postText }
+Do not include any markdown, explanations, or additional text.`
+    
+    try {
+      const retryResponse = await claudeMessage(retryPrompt)
+      const retryCleaned = cleanJsonResponse(retryResponse)
+      
+      if (isValidJSON(retryCleaned)) {
+        const retryParsed: PostResponse = JSON.parse(retryCleaned)
+        const firstPost = retryParsed.post_drafts[0]?.post || 'No post generated'
+        
+        const { error: updErr } = await db
+          .from('posts')
+          .update({ post_content: firstPost, insight_id: insightId })
+          .eq('id', postId)
+        if (updErr) throw updErr
+
+        return { post: firstPost }
+      }
+    } catch (retryError) {
+      console.error('Retry also failed:', retryError)
+    }
+    
+    // Final fallback to simple post generation
+    const fallbackPrompt = `Write a LinkedIn post starting with this hook: "${post.post_hook}"\n\nBased on this insight: ${JSON.stringify(insight.insight)}`
+    const fallbackPost = await claudeMessage(fallbackPrompt)
+    let postText = ensureHookPresent(fallbackPost, String(post.post_hook || ''))
+    postText = enforceLengthAndCompleteness(postText, 500, 280, 800)
+    
+    const { error: updErr } = await db
+      .from('posts')
+      .update({ post_content: postText, insight_id: insightId })
+      .eq('id', postId)
+    if (updErr) throw updErr
+
+    return { post: postText }
+  }
 }
 
 function enforceLengthAndCompleteness(text: string, target: number, min: number, max: number): string {

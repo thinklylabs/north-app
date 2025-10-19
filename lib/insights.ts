@@ -1,15 +1,10 @@
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
 
 type SingleInsight = {
-  title: string
-  explanation: string
-  target_audience: string
-  suggested_formats: string[]
-  examples: string[]
-  risks_or_pitfalls: string[]
-  metrics_to_track: string[]
-  timeframe: string
-  idea_eq?: string
+  topic: string
+  insight: string
+  insight_type: string
+  value_added: string
 }
 
 function getAdminClient() {
@@ -83,37 +78,28 @@ async function fetchRagContextForTopic(userId: string, topic: string): Promise<s
 }
 
 function buildSystemPrompt(): string {
-  return 'You are an elite content strategy and growth expert. Generate ONE high-quality, concise, actionable insight centered STRICTLY on the provided idea_topic. Use the optional context only to enrich specifics; do not drift off-topic. Be concrete, ICP-aware, and distribution-aware. Avoid fluff and clichés. Output STRICT JSON only.'
+  return 'You are an Insight Retriever (contextual enrichment via RAG). Use the topic, summary, and eq from each post_idea to pull 1–2 contextually relevant insights, examples, or references from the RAG source — anything that makes the idea sharper, richer, or more credible when turned into a post.\n\nFollow these exact requirements:\n- Treat topic + summary + eq as a holistic query — interpret what the idea is *really about* (theme, tension, energy)\n- Search the RAG for complementary material: facts, founder anecdotes, frameworks, contrasting opinions, or real-world parallels\n- Prioritize responses that *add depth*, not clutter — something that either proves, challenges, or extends the idea\n- Write the insight conversationally, as if a founder is dropping a smart reference mid-post — not quoting a report\n- You can mix evidence types (data, story, quote, observation) if they flow naturally\n- If no relevant insight is found, summarize a plausible contextual angle or leave \'no clear RAG insight\' (no fabrication)\n- Avoid rigid citation or corporate phrasing; the output should read like a builder adding a sharp layer of context\n- Tone: insightful, grounded, slightly informal — like a real operator referencing lived or observed proof\n\nOutput exactly 1–2 insights as JSON array with this schema:\n[\n  {\n    "topic": "string (copied from post_idea input for reference)",\n    "insight": "string (natural 2–4 sentence enrichment: story, data point, or idea that supports or contrasts the post idea)",\n    "insight_type": "string (story | example | stat | framework | observation | contrast | no_match)",\n    "value_added": "string (1 short line explaining how this enriches or shifts the perspective of the original idea)"\n  }\n]\n\nReturn ONLY a JSON array that matches the schema.'
 }
 
-function buildUserPrompt(topic: string, context: string): string {
+function buildUserPrompt(topic: string, summary: string, eq: string, context: string): string {
   return [
-    `Idea topic: "${topic}"`,
+    `Post idea topic: "${topic}"`,
+    `Summary: "${summary}"`,
+    `Emotional angle: "${eq}"`,
     '',
-    'Optional RAG context (use only if relevant; do not invent facts):',
+    'RAG context (use only if relevant; do not invent facts):',
     context,
     '',
     'Task:',
-    '- Produce ONE consolidated insight that a creator/brand can execute within 1–2 weeks, strictly centered on the idea_topic.',
-    '- Keep it crisp and outcome-oriented. Do NOT include hooks.',
-    '- Also provide idea_eq as a VERY SHORT phrase (a few words) capturing the primary emotional angle for the audience (e.g., pride, relief, safety, momentum).',
-    '',
-    'Schema (return ONLY this JSON object):',
-    '{',
-    '  "title": "string (<= 90 chars)",',
-    '  "explanation": "string (<= 500 chars)",',
-    '  "target_audience": "string (<= 140 chars)",',
-    '  "suggested_formats": ["string", "..."],',
-    '  "examples": ["string", "..."],',
-    '  "risks_or_pitfalls": ["string", "..."],',
-    '  "metrics_to_track": ["string", "..."],',
-    '  "timeframe": "string (<= 60 chars)",',
-    '  "idea_eq": "string (<= 60 chars) — a few words only"',
-    '}',
+    '- Find 1–2 contextually relevant insights that enrich this post idea',
+    '- Look for complementary material: facts, founder anecdotes, frameworks, contrasting opinions, or real-world parallels',
+    '- Each insight should be 2–4 sentences, conversational and story-led',
+    '- Avoid academic citations or corporate phrasing',
+    '- If no relevant insight found, leave as "no clear RAG insight"',
   ].join('\n')
 }
 
-async function callOpenAISingleInsight(topic: string, context: string): Promise<SingleInsight | null> {
+async function callOpenAISingleInsight(topic: string, summary: string, eq: string, context: string): Promise<SingleInsight[]> {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not set')
   }
@@ -127,10 +113,9 @@ async function callOpenAISingleInsight(topic: string, context: string): Promise<
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: buildSystemPrompt() },
-        { role: 'user', content: buildUserPrompt(topic, context) }
+        { role: 'user', content: buildUserPrompt(topic, summary, eq, context) }
       ],
       temperature: 0.35,
-      response_format: { type: 'json_object' }
     })
   })
 
@@ -140,35 +125,31 @@ async function callOpenAISingleInsight(topic: string, context: string): Promise<
   }
   const json = await res.json()
   const content: string | undefined = json?.choices?.[0]?.message?.content
-  if (!content) return null
+  if (!content) return []
 
   try {
     const parsed = JSON.parse(content)
-    const norm = (arr: any): string[] => Array.isArray(arr) ? arr.map((s: any) => String(s)).slice(0, 6) : []
-    const insight: SingleInsight = {
-      title: String(parsed?.title || '').slice(0, 200),
-      explanation: String(parsed?.explanation || '').slice(0, 1000),
-      target_audience: String(parsed?.target_audience || '').slice(0, 280),
-      suggested_formats: norm(parsed?.suggested_formats),
-      examples: norm(parsed?.examples),
-      risks_or_pitfalls: norm(parsed?.risks_or_pitfalls),
-      metrics_to_track: norm(parsed?.metrics_to_track),
-      timeframe: String(parsed?.timeframe || '').slice(0, 120),
-      idea_eq: parsed?.idea_eq ? String(parsed.idea_eq).slice(0, 120) : undefined
-    }
-    if (!insight.title && !insight.explanation) return null
-    return insight
+    if (!Array.isArray(parsed)) return []
+
+    const insights: SingleInsight[] = parsed.map((item) => ({
+      topic: String(item.topic || '').slice(0, 300),
+      insight: String(item.insight || '').slice(0, 1000),
+      insight_type: String(item.insight_type || '').slice(0, 50),
+      value_added: String(item.value_added || '').slice(0, 200),
+    })).filter(i => i.topic && i.insight)
+
+    return insights
   } catch {
-    return null
+    return []
   }
 }
 
-export async function generateInsightForIdeaId(ideaId: number): Promise<{ inserted: boolean; insightId?: number }> {
+export async function generateInsightForIdeaId(ideaId: number): Promise<{ inserted: boolean; insightIds?: number[] }> {
   const supabase = getAdminClient()
 
   const { data: idea, error: ideaErr } = await supabase
     .from('ideas')
-    .select('id, user_id, idea_topic')
+    .select('id, user_id, idea_topic, idea_summary, idea_eq')
     .eq('id', ideaId)
     .maybeSingle()
   if (ideaErr) throw ideaErr
@@ -182,30 +163,50 @@ export async function generateInsightForIdeaId(ideaId: number): Promise<{ insert
     context = ''
   }
 
-  let single: SingleInsight | null = null
+  let insights: SingleInsight[] = []
   try {
-    single = await callOpenAISingleInsight(String(idea.idea_topic || ''), context)
+    insights = await callOpenAISingleInsight(
+      String(idea.idea_topic || ''), 
+      String(idea.idea_summary || ''), 
+      String(idea.idea_eq || ''), 
+      context
+    )
   } catch (e) {
     return { inserted: false }
   }
-  if (!single) return { inserted: false }
+  if (!insights.length) return { inserted: false }
 
-  const row: any = {
-    user_id: idea.user_id,
-    idea_id: idea.id,
-    idea_topic: idea.idea_topic,
-    insight: single,
-    status: 'draft'
+  const insertedIds: number[] = []
+
+  for (const insight of insights) {
+    const row: any = {
+      user_id: idea.user_id,
+      idea_id: idea.id,
+      idea_topic: idea.idea_topic,
+      insight: insight,
+      status: 'draft'
+    }
+
+    const { data: inserted, error: insErr } = await supabase
+      .from('insights')
+      .insert(row)
+      .select('id')
+      .single()
+
+    if (insErr) {
+      console.error('Failed to insert insight:', insErr)
+      continue
+    }
+
+    if (inserted?.id) {
+      insertedIds.push(inserted.id)
+    }
   }
 
-  const { data: inserted, error: insErr } = await supabase
-    .from('insights')
-    .insert(row)
-    .select('id')
-    .single()
-
-  if (insErr) throw insErr
-  return { inserted: true, insightId: inserted?.id }
+  return { 
+    inserted: insertedIds.length > 0, 
+    insightIds: insertedIds 
+  }
 }
 
 

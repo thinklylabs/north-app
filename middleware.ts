@@ -46,18 +46,22 @@ export async function middleware(request: NextRequest) {
 
   // Role-based routing with proper enum values
   if (profile.role === ROLES.ADMIN) {
-    // Admin users should be redirected to /admin if they try to access /dashboard
-    if (pathname === '/dashboard' || pathname === '/') {
+    // Admin users should be redirected to /admin if they try to access user pages
+    if (pathname === '/users/dashboard' || pathname === '/dashboard' || pathname === '/') {
       return NextResponse.redirect(new URL('/admin', request.url))
     }
   } else if (profile.role === ROLES.USER) {
-    // Regular users should be redirected to /dashboard if they try to access /admin
+    // Regular users should be redirected to /users/dashboard if they try to access /admin
     if (pathname === '/admin') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+      return NextResponse.redirect(new URL('/users/dashboard', request.url))
     }
-    // Redirect root to dashboard for users
+    // Redirect root to users/dashboard for users
     if (pathname === '/') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+      return NextResponse.redirect(new URL('/users/dashboard', request.url))
+    }
+    // Redirect old dashboard path to new users/dashboard path
+    if (pathname === '/dashboard') {
+      return NextResponse.redirect(new URL('/users/dashboard', request.url))
     }
   }
 

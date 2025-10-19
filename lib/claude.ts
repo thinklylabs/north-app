@@ -5,7 +5,7 @@ export async function claudeMessage(content: string, model: string = 'claude-son
 
   const body = {
     model,
-    max_tokens: 512,
+    max_tokens: 2048,
     temperature: 0.4,
     messages: [
       {

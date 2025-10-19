@@ -33,42 +33,42 @@ import { UserProfileDropdown } from "@/components/UserProfileDropdown";
 const navigationItems = [
   {
     title: "Dashboard",
-    url: "/dashboard",
+    url: "/users/dashboard",
     icon: Home,
   },
   {
     title: "Posts",
-    url: "/posts",
+    url: "/users/posts",
     icon: FileText,
   },
   {
     title: "Ideas",
-    url: "/ideas",
+    url: "/users/ideas",
     icon: Lightbulb,
   },
   {
     title: "Library",
-    url: "/library",
+    url: "/users/library",
     icon: BookOpen,
   },
   {
     title: "Leads",
-    url: "/leads",
+    url: "/users/leads",
     icon: Users,
   },
   {
     title: "Engagement",
-    url: "/engagement",
+    url: "/users/engagement",
     icon: TrendingUp,
   },
   {
     title: "Chat",
-    url: "/chat",
+    url: "/users/chat",
     icon: MessageSquare,
   },
   {
     title: "Settings",
-    url: "/settings",
+    url: "/users/settings",
     icon: MessageSquare,
   },
 ];

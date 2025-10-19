@@ -265,7 +265,7 @@ export default function PostsPage() {
       <div className="flex items-center justify-between p-6 md:px-10">
         <div className="flex items-center gap-3">
           <SidebarTrigger />
-          <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Posts</span>
+          <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Users  {'>'}  Posts</span>
         </div>
         <LogoutButton />
       </div>

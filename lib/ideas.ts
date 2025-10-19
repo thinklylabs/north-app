@@ -30,11 +30,94 @@ async function computeDedupeSignature(topic: string, takeaway: string): Promise<
   return createHash('sha256').update(normalized).digest('hex')
 }
 
-function buildPrompt(sourceType: string, title: string | null, content: string): { system: string; user: string } {
-  const system = 'You are an expert content strategist. Extract one specific, actionable content idea from the provided material. Output strict JSON with keys: idea_topic, idea_summary, idea_eq, idea_takeaway. No prose outside JSON.'
+function buildPromptV2(sourceType: string, title: string | null, content: string): { system: string; user: string } {
+  const system = `You are the "Post Idea Generator (builder tone, real talk)".
+Your job: turn any transcript, meeting note, substack, or raw dump into 3–4 high-signal LinkedIn post ideas that have story, tension, and critique — ready for downstream hook → draft → final post agents.
+
+Follow these exact requirements:
+- Read the input end-to-end (no keyword skimming)
+- Identify the sharpest tensions, surprises, or contradictions (what most people assume vs what actually happened)
+- Anchor each idea in real context — feedback, anecdote, data, or observed pain point
+- Output must cover multiple idea_buckets: at least one contrarian, one story (build-in-public or founder/personal), and one tactical/playbook angle
+- For each idea: define
+  - hook_angle (opening question or energy)
+  - value_prop (why it matters)
+  - emotional_driver (emotion felt — frustration, relief, pride, disbelief, curiosity)
+  - content_core (3–5 sentences of real context or learning)
+  - forward_guidance (what hook agent should emphasize)
+  - critique_note (what to avoid to sound real)
+  - person_reference (optional, 1 of 3–4 ideas)
+- Each idea unique in pacing and tone
+- Finish with batch_summary (1 line insight about the founder, market, or trend)
+- Tone: builder, reflective, lowercase, punchy. Avoid generic filler.
+- Output exactly 3–4 ideas.
+
+Output strict JSON array matching this schema:
+[
+  {
+    "topic": "string",
+    "summary": "string",
+    "eq": "string",
+    "takeaway": "string",
+    "bucket": "string"
+  }
+]
+No prose outside JSON.`
+
   const header = `[source_type: ${sourceType}]${title ? `\n[title: ${title}]` : ''}`
-  const user = `Context:\n${header}\n\nContent:\n${content.slice(0, 20000)}\n\nSchema (exact):\n{\n  "idea_topic": "string (<= 120 chars)",\n  "idea_summary": "string (<= 700 chars) – grounded, 2–4 sentences",\n  "idea_eq": "string (<= 160 chars) — a short description of the idea's emotional quotient (how it connects with people’s feelings: care, empathy, inspiration, relief, safety, pride, hope, urgency, belonging). Focus on the primary audience emotion and why they would care.",\n  "idea_takeaway": "string (<= 240 chars)"\n}\n\nInstructions:\n- Propose exactly 1 distinct idea grounded only in the content.\n- Be concise and specific; avoid vague topics.\n- For idea_eq, do NOT give a numeric score. Write a tight human-readable emotional angle (e.g., "Eases daily stress for new parents by ensuring safer school drop-offs" not just "high EQ").\n- Return ONLY a JSON object that matches the schema.\n\nExamples (for style of idea_eq only):\n- Idea: parking near schools → idea_eq: "Relieves parents’ anxiety with safer, faster school drop-offs"\n- Idea: carbon tracking for SMBs → idea_eq: "Gives founders pride and confidence by proving real climate impact"\n`
+  const user = `Context:\n${header}\n\nContent:\n${content.slice(0, 20000)}`
   return { system, user }
+}
+
+async function callOpenAIExtractV2(system: string, user: string): Promise<ExtractedIdea[]> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not set')
+  }
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+      temperature: 0.4,
+    }),
+  })
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '')
+    throw new Error(`OpenAI error ${res.status}: ${errText}`)
+  }
+
+  const json = await res.json()
+  const content = json?.choices?.[0]?.message?.content
+  console.log('🧩 Raw OpenAI content:', content)
+
+  let parsed: any
+  try {
+    parsed = JSON.parse(content)
+  } catch {
+    console.error('Failed to parse OpenAI response.')
+    return []
+  }
+
+  const ideasArray = Array.isArray(parsed) ? parsed : parsed.ideas
+  if (!Array.isArray(ideasArray)) return []
+
+  const ideas: ExtractedIdea[] = ideasArray.map((i) => ({
+    idea_topic: i.topic,
+    idea_summary: i.summary,
+    idea_eq: i.eq,
+    idea_takeaway: i.takeaway,
+  })).filter(i => i.idea_topic && i.idea_summary)
+
+  return ideas
 }
 
 async function callOpenAIExtract(system: string, user: string): Promise<ExtractedIdea | null> {
@@ -80,7 +163,7 @@ async function callOpenAIExtract(system: string, user: string): Promise<Extracte
   }
 }
 
-export async function generateIdeaForRawId(rawId: number): Promise<{ inserted: boolean; ideaId?: number; skippedDuplicate?: boolean }> {
+export async function generateIdeaForRawId(rawId: number): Promise<{ inserted: boolean; ideaIds?: number[]; skippedDuplicates?: number }> {
   const supabase = getAdminClient()
 
   const { data: raw, error: rawErr } = await supabase
@@ -99,68 +182,88 @@ export async function generateIdeaForRawId(rawId: number): Promise<{ inserted: b
   if (srcErr) throw srcErr
   if (!source) throw new Error('content_source not found')
 
-  const { system, user } = buildPrompt(String(source.source_type || ''), raw.title || null, String(raw.content || ''))
+  const { system, user } = buildPromptV2(String(source.source_type || ''), raw.title || null, String(raw.content || ''))
 
-  let idea: ExtractedIdea | null = null
+  let ideas: ExtractedIdea[] = []
   try {
-    idea = await callOpenAIExtract(system, user)
+    ideas = await callOpenAIExtractV2(system, user)
   } catch (e) {
-    console.error('OpenAI extract failed for raw_id', rawId, e)
+    console.error('OpenAI extract failed', e)
     return { inserted: false }
   }
-  if (!idea) return { inserted: false }
 
-  const signature = await computeDedupeSignature(idea.idea_topic, idea.idea_takeaway || '')
-
-  // Check duplicate for this user
-  const { data: existing } = await supabase
-    .from('ideas')
-    .select('id')
-    .eq('user_id', source.user_id)
-    .eq('dedupe_signature', signature)
-    .is('deleted_at', null)
-    .maybeSingle()
-
-  if (existing) {
-    return { inserted: false, skippedDuplicate: true }
+  if (!ideas.length) {
+    console.error('⚠️ No ideas extracted — parser returned empty array.')
+    return { inserted: false }
   }
 
-  const insertRow: any = {
-    user_id: source.user_id,
-    source_id: source.id,
-    raw_id: raw.id,
-    source_type: source.source_type,
-    idea_topic: idea.idea_topic,
-    idea_summary: idea.idea_summary,
-    idea_eq: idea.idea_eq || null,
-    idea_takeaway: idea.idea_takeaway || null,
-    dedupe_signature: signature,
-  }
+  const results: any[] = []
+  const insertedIds: number[] = []
+  let skippedCount = 0
 
-  const { data: inserted, error: insErr } = await supabase
-    .from('ideas')
-    .insert(insertRow)
-    .select('id')
-    .single()
+  for (const idea of ideas) {
+    const signature = await computeDedupeSignature(idea.idea_topic, idea.idea_takeaway || '')
 
-  if (insErr) throw insErr
-  // Best-effort: immediately generate a single consolidated insight for this idea
-  try {
-    const { generateInsightForIdeaId } = await import('@/lib/insights')
+    const { data: existing } = await supabase
+      .from('ideas')
+      .select('id')
+      .eq('user_id', source.user_id)
+      .eq('dedupe_signature', signature)
+      .is('deleted_at', null)
+      .maybeSingle()
+
+    if (existing) {
+      results.push({ skippedDuplicate: true })
+      skippedCount++
+      continue
+    }
+
+    const insertRow = {
+      user_id: source.user_id,
+      source_id: source.id,
+      raw_id: raw.id,
+      source_type: source.source_type,
+      idea_topic: idea.idea_topic,
+      idea_summary: idea.idea_summary,
+      idea_eq: idea.idea_eq || null,
+      idea_takeaway: idea.idea_takeaway || null,
+      dedupe_signature: signature,
+    }
+
+    console.log('🧠 Inserting idea:', insertRow)
+    const { data: inserted, error: insErr } = await supabase
+      .from('ideas')
+      .insert(insertRow)
+      .select('id')
+      .single()
+
+    if (insErr) {
+      console.error('❌ Supabase insert error:', insErr)
+      continue
+    }
+
+    results.push({ inserted: true, ideaId: inserted?.id })
     if (inserted?.id) {
-      await generateInsightForIdeaId(inserted.id)
-      // Continue with Hook -> Post pipeline
-      try {
+      insertedIds.push(inserted.id)
+    }
+
+    try {
+      const { generateInsightForIdeaId } = await import('@/lib/insights')
+      if (inserted?.id) {
+        await generateInsightForIdeaId(inserted.id)
         const { runHookAndPostPipelineForIdea } = await import('@/lib/pipeline')
         await runHookAndPostPipelineForIdea(inserted.id)
-      } catch (e) {
-        console.error('Failed Hook/Post pipeline for idea', inserted.id, e)
       }
+    } catch (e) {
+      console.error('Failed downstream pipeline for idea', inserted?.id, e)
     }
-  } catch (e) {
-    console.error('Failed to generate insight for idea', inserted?.id, e)
   }
-  return { inserted: true, ideaId: inserted?.id }
+
+  return { 
+    inserted: insertedIds.length > 0, 
+    ideaIds: insertedIds,
+    skippedDuplicates: skippedCount
+  }
 }
 
 

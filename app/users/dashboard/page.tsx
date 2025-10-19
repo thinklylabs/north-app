@@ -190,7 +190,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between p-6 md:px-10">
         <div className="flex items-center gap-3">
           <SidebarTrigger />
-          <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Home</span>
+          <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Users  {'>'}  Home</span>
         </div>
         <div className="flex items-center gap-3">
           <Button

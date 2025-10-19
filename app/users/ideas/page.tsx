@@ -255,7 +255,7 @@ export default function IdeasPage() {
       <div className="flex items-center justify-between p-6 md:px-10">
         <div className="flex items-center gap-3">
           <SidebarTrigger />
-          <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Ideas</span>
+          <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Users  {'>'}  Ideas</span>
         </div>
         <LogoutButton />
       </div>

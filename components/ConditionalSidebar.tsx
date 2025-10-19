@@ -26,6 +26,18 @@ const ADMIN_PATHS = [
   "/admin/health"
 ];
 
+const USER_PATHS = [
+  "/users",
+  "/users/dashboard",
+  "/users/posts",
+  "/users/ideas",
+  "/users/leads",
+  "/users/engagement",
+  "/users/library",
+  "/users/chat",
+  "/users/settings"
+];
+
 export function ConditionalSidebar({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   
@@ -34,6 +46,7 @@ export function ConditionalSidebar({ children }: { children: React.ReactNode }) 
   );
 
   const isAdminPath = ADMIN_PATHS.some(path => pathname.startsWith(path));
+  const isUserPath = USER_PATHS.some(path => pathname.startsWith(path));
 
   if (shouldShowSidebar) {
     if (isAdminPath) {
@@ -44,14 +57,16 @@ export function ConditionalSidebar({ children }: { children: React.ReactNode }) 
       );
     }
 
-    return (
-      <SidebarProvider>
-        <AppSidebar />
-        <main className="flex-1">
-          {children}
-        </main>
-      </SidebarProvider>
-    );
+    if (isUserPath) {
+      return (
+        <SidebarProvider>
+          <AppSidebar />
+          <main className="flex-1">
+            {children}
+          </main>
+        </SidebarProvider>
+      );
+    }
   }
 
   return <>{children}</>;

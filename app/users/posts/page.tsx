@@ -37,6 +37,15 @@ export default function PostsPage() {
   const [saving, setSaving] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [sendingFeedback, setSendingFeedback] = useState(false);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
+  const [feedbackMessages, setFeedbackMessages] = useState<{
+    id: number;
+    authorUserId: string;
+    authorRole: 'user' | 'admin';
+    body: string;
+    createdAt: string;
+  }[]>([]);
+  const [insightForThread, setInsightForThread] = useState<{ id: number; insight: any } | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPosts, setSelectedPosts] = useState<Set<number>>(new Set());
@@ -260,6 +269,35 @@ export default function PostsPage() {
     }
     loadPosts();
   }, []);
+
+  useEffect(() => {
+    async function loadFeedbackForSelected() {
+      if (!selectedRow) return;
+      const supabase = createClient();
+      try {
+        setLoadingFeedback(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) {
+          setFeedbackMessages([]);
+          return;
+        }
+        const res = await fetch(`/api/feedbacks?postId=${selectedRow.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          setFeedbackMessages([]);
+          return;
+        }
+        const json = await res.json();
+        setFeedbackMessages(Array.isArray(json?.messages) ? json.messages : []);
+        setInsightForThread(json?.insight ? json.insight : null);
+      } finally {
+        setLoadingFeedback(false);
+      }
+    }
+    loadFeedbackForSelected();
+  }, [selectedRow]);
   return (
     <div className="min-h-screen w-full bg-[#FCF9F5] text-[#0D1717]">
       <div className="flex items-center justify-between p-6 md:px-10">
@@ -579,6 +617,12 @@ export default function PostsPage() {
                   ✕
                 </button>
               </div>
+              {insightForThread ? (
+                <div className="px-5 pt-2 text-[11px] text-[#6F7777]">
+                  <div className="font-medium text-[#0D1717] mb-1">Insight</div>
+                  <pre className="text-[11px] whitespace-pre-wrap bg-[#F6F2EC] text-[#0D1717] rounded-[8px] p-2 max-h-[160px] overflow-auto">{JSON.stringify(insightForThread.insight, null, 2)}</pre>
+                </div>
+              ) : null}
               {/* Content */}
               <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -650,7 +694,27 @@ export default function PostsPage() {
                   </div>
                 </div>
                 <div>
-                  <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Feedback for strategist</div>
+                  <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Feedback thread</div>
+                  <div className="max-h-[180px] overflow-auto rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-white p-3 mb-3">
+                    {loadingFeedback ? (
+                      <div className="text-[11px] text-[#6F7777]">Loading feedback…</div>
+                    ) : feedbackMessages.length === 0 ? (
+                      <div className="text-[11px] text-[#6F7777]">No feedback yet.</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {feedbackMessages.map(m => (
+                          <div key={m.id} className="text-[12px]">
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex items-center rounded-[6px] px-1.5 py-[1px] text-[10px] ${m.authorRole === 'admin' ? 'bg-[#E5EDFF] text-[#1E40AF]' : 'bg-[#EDE8E1] text-[#6F7777]'}`}>{m.authorRole}</span>
+                              <span className="text-[#6F7777] text-[10px]">{new Date(m.createdAt).toLocaleString()}</span>
+                            </div>
+                            <div className="mt-1 text-[#0D1717] whitespace-pre-wrap">{m.body}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Add feedback</div>
                   <div className="relative">
                     <textarea
                       value={editFeedback}
@@ -687,6 +751,16 @@ export default function PostsPage() {
                           }
                           toast.success('Feedback sent')
                           setEditFeedback('')
+                          // refresh list
+                          await (async () => {
+                            try {
+                              const r = await fetch(`/api/feedbacks?postId=${selectedRow.id}`, { headers: { Authorization: `Bearer ${token}` } })
+                              if (r.ok) {
+                                const j = await r.json();
+                                setFeedbackMessages(Array.isArray(j?.messages) ? j.messages : [])
+                              }
+                            } catch {}
+                          })()
                         } catch (e: any) {
                           toast.error(e?.message || 'Failed to send feedback')
                         } finally {

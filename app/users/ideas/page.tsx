@@ -48,6 +48,17 @@ export default function IdeasPage() {
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackFor, setFeedbackFor] = useState<'idea' | 'post' | 'hook' | 'insight'>("idea");
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [threadMessages, setThreadMessages] = useState<{
+    id: number;
+    authorUserId: string;
+    authorRole: 'user' | 'admin';
+    body: string;
+    createdAt: string;
+  }[]>([]);
+  const [loadingThread, setLoadingThread] = useState(false);
+  const [newIdeaFeedback, setNewIdeaFeedback] = useState("");
+  const [sendingIdeaFeedback, setSendingIdeaFeedback] = useState(false);
+  const [insightForIdea, setInsightForIdea] = useState<{ id: number; insight: any } | null>(null);
 
   const STATUS_OPTIONS = [
     "draft",
@@ -249,6 +260,35 @@ export default function IdeasPage() {
     }
     loadIdeas();
   }, []);
+
+  useEffect(() => {
+    async function loadIdeaFeedback() {
+      if (!selected) return;
+      const supabase = createClient();
+      try {
+        setLoadingThread(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) {
+          setThreadMessages([]);
+          return;
+        }
+        const res = await fetch(`/api/feedbacks?ideaId=${selected.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          setThreadMessages([]);
+          return;
+        }
+        const json = await res.json();
+        setThreadMessages(Array.isArray(json?.messages) ? json.messages : []);
+        setInsightForIdea(json?.insight ? json.insight : null);
+      } finally {
+        setLoadingThread(false);
+      }
+    }
+    loadIdeaFeedback();
+  }, [selected]);
 
   return (
     <div className="min-h-screen w-full bg-[#FCF9F5] text-[#0D1717]">
@@ -594,6 +634,12 @@ export default function IdeasPage() {
                     ✕
                   </button>
                 </div>
+                {insightForIdea ? (
+                  <div className="px-5 pt-2 text-[11px] text-[#6F7777]">
+                    <div className="font-medium text-[#0D1717] mb-1">Insight</div>
+                    <pre className="text-[11px] whitespace-pre-wrap bg-[#F6F2EC] text-[#0D1717] rounded-[8px] p-2 max-h-[160px] overflow-auto">{JSON.stringify(insightForIdea.insight, null, 2)}</pre>
+                  </div>
+                ) : null}
                 {/* Editable content */}
                 <div className="px-5 py-4 grid grid-cols-1 gap-3">
                   <div>
@@ -622,6 +668,88 @@ export default function IdeasPage() {
                       placeholder="Takeaway"
                       className={`w-full h-[100px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none`}
                     />
+                  </div>
+                </div>
+                {/* Feedback thread */}
+                <div className="px-5 pb-4">
+                  <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Feedback thread</div>
+                  <div className="max-h-[180px] overflow-auto rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-white p-3 mb-3">
+                    {loadingThread ? (
+                      <div className="text-[11px] text-[#6F7777]">Loading feedback…</div>
+                    ) : threadMessages.length === 0 ? (
+                      <div className="text-[11px] text-[#6F7777]">No feedback yet.</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {threadMessages.map(m => (
+                          <div key={m.id} className="text-[12px]">
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex items-center rounded-[6px] px-1.5 py-[1px] text-[10px] ${m.authorRole === 'admin' ? 'bg-[#E5EDFF] text-[#1E40AF]' : 'bg-[#EDE8E1] text-[#6F7777]'}`}>{m.authorRole}</span>
+                              <span className="text-[#6F7777] text-[10px]">{new Date(m.createdAt).toLocaleString()}</span>
+                            </div>
+                            <div className="mt-1 text-[#0D1717] whitespace-pre-wrap">{m.body}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Add feedback</div>
+                  <div className="flex items-start gap-2">
+                    <textarea
+                      value={newIdeaFeedback}
+                      onChange={(e) => setNewIdeaFeedback(e.target.value)}
+                      placeholder="Suggest changes, ask questions…"
+                      className="flex-1 h-[90px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none"
+                    />
+                    <Button
+                      type="button"
+                      className="h-[32px] px-3 rounded-[6px] bg-[#1DC6A1] text-white hover:bg-[#19b391] text-[12px] cursor-pointer"
+                      disabled={sendingIdeaFeedback || !selected || !newIdeaFeedback.trim()}
+                      onClick={async () => {
+                        if (!selected) return;
+                        const supabase = createClient();
+                        const { data: { session } } = await supabase.auth.getSession();
+                        const token = session?.access_token;
+                        if (!token) {
+                          toast.error('Not authenticated');
+                          return;
+                        }
+                        try {
+                          setSendingIdeaFeedback(true);
+                          const res = await fetch('/api/feedbacks', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              Authorization: `Bearer ${token}`,
+                            },
+                            body: JSON.stringify({
+                              feedback_for: 'idea',
+                              target_id: selected.id,
+                              feedback: newIdeaFeedback.trim(),
+                            }),
+                          });
+                          if (!res.ok) {
+                            const j = await res.json().catch(() => ({}));
+                            throw new Error(j.error || 'Failed to send feedback');
+                          }
+                          toast.success('Feedback sent');
+                          setNewIdeaFeedback('');
+                          // refresh messages
+                          try {
+                            const r = await fetch(`/api/feedbacks?ideaId=${selected.id}`, { headers: { Authorization: `Bearer ${token}` } });
+                            if (r.ok) {
+                              const j = await r.json();
+                              setThreadMessages(Array.isArray(j?.messages) ? j.messages : []);
+                            }
+                          } catch {}
+                        } catch (e: any) {
+                          toast.error(e?.message || 'Failed to send feedback');
+                        } finally {
+                          setSendingIdeaFeedback(false);
+                        }
+                      }}
+                    >
+                      {sendingIdeaFeedback ? 'Sending…' : 'Send'}
+                    </Button>
                   </div>
                 </div>
                 {/* Footer Buttons */}

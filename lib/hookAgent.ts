@@ -1,14 +1,10 @@
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
 import { claudeMessage } from '@/lib/claude'
 
-type HookResult = {
-  style: string
-  source_idea: string
-  hook: string
-}
 
 type HookResponse = {
-  hooks: HookResult[]
+  hook: string
+  style: string
   notes: string
 }
 
@@ -54,19 +50,19 @@ function buildHookPrompt(idea_topic: string, idea_summary: string, idea_eq?: str
     '# :brain: Hook Strategist (Conversion Focus, Builder Tone)',
     '',
     '## :dart: Objective',
-    'Given multiple **`post_ideas`**, generate **exactly 4 high-performing opening hooks** that align with proven founder content patterns and drive **scroll-stopping engagement**.',
+    'Given a **`post_idea`**, generate **exactly 1 high-performing opening hook** that aligns with proven founder content patterns and drives **scroll-stopping engagement**.',
     '',
     '---',
     '',
     '## :gear: Requirements',
     '',
     '### :mag: Logic',
-    '1. **Read all post_ideas** and identify the **4 sharpest, most distinct angles**.',
-    '2. **Map each hook** to a unique performance pattern:',
+    '1. **Read the post_idea** and identify the **1 sharpest, most distinct angle**.',
+    '2. **Map the hook** to a performance pattern:',
     '   - **Stat / Result** → numeric proof, milestone, or before → after contrast.',
     '   - **Imperative / Command** → direct, no-nonsense call to think or act.',
     '   - **Question / Curiosity** → open loop that teases tension or learning.',
-    '   - **Contrarian / Myth / Listicle / Timeline** → choose whichever fits best per input.',
+    '   - **Contrarian / Myth / Listicle / Timeline** → choose whichever fits best for this input.',
     '3. For **timeline hooks**, highlight evolution or growth.',
     '   For **listicles**, emphasize simplicity of structure (e.g. "3 things that…").',
     '   For **contrarian hooks**, spotlight friction against a common belief.',
@@ -75,21 +71,15 @@ function buildHookPrompt(idea_topic: string, idea_summary: string, idea_eq?: str
     '   - Occasional CAPS or line breaks for emphasis.',
     '   - Second-person ("you") framing.',
     '   - Confident "i/we" narrative voice when relevant.',
-    '6. Ensure hooks **differ in rhythm, intent, and topic pillar** — covering at least one of:',
-    '   - creative',
-    '   - AI workflow',
-    '   - metrics',
-    '   - scaling/ops',
+    '6. Ensure the hook ties to a **dominant topic pillar** (*creative, metrics, AI, scaling/ops*).',
     '',
     '---',
     '',
     '### :bricks: Hard Rules',
-    '- Exactly **4 hooks total**.',
-    '- Each hook ≤ **15 words** (1 sentences only).',
+    '- Exactly **1 hook total**.',
+    '- Hook ≤ **15 words** (1 sentence only).',
     '- Must feel **human, builder, punchy** — no buzzwords, jargon, or fluff.',
-    '- Each hook must **clearly tie back** to its `source_idea`.',
-    '- Avoid repeating **sentence structure or rhythm**.',
-    '- At least one hook must tie to a **dominant topic pillar** (*creative, metrics, AI, scaling/ops*).',
+    '- Hook must **clearly tie back** to the `source_idea`.',
     '- **No emojis or hashtags.**',
     '',
     '---',
@@ -98,14 +88,9 @@ function buildHookPrompt(idea_topic: string, idea_summary: string, idea_eq?: str
     '',
     '```json',
     '{',
-    '  "hooks": [',
-    '    {',
-    '      "style": "string (stat/result | imperative | question | contrarian/myth | listicle | timeline)",',
-    '      "source_idea": "string (reference to which post_idea it came from)",',
-    '      "hook": "string (max 15 words, builder-tone, scroll-stopping opener)"',
-    '    }',
-    '  ],',
-    '  "notes": "string (2–3 lines summarizing why these 4 hooks were chosen, what emotions or contrasts they trigger, and how they follow proven founder post patterns)"',
+    '  "hook": "string (max 15 words, builder-tone, scroll-stopping opener)",',
+    '  "style": "string (stat/result | imperative | question | contrarian/myth | listicle | timeline)",',
+    '  "notes": "string (1–2 lines explaining why this hook was chosen and what emotion or contrast it triggers)"',
     '}',
     '```',
     '',
@@ -149,7 +134,7 @@ export async function generateHookForIdea(ideaId: number): Promise<{ hook: strin
     }
     
     const parsed: HookResponse = JSON.parse(cleanResponse)
-    const firstHook = parsed.hooks[0]?.hook || 'No hook generated'
+    const hook = parsed.hook || 'No hook generated'
     
     const { data: postRow, error: postErr } = await db
       .from('posts')
@@ -157,14 +142,14 @@ export async function generateHookForIdea(ideaId: number): Promise<{ hook: strin
         user_id: idea.user_id,
         idea_id: idea.id,
         post_content: '',
-        post_hook: firstHook,
+        post_hook: hook,
         status: 'draft'
       })
       .select('id')
       .single()
     if (postErr) throw postErr
 
-    return { hook: firstHook, postId: postRow.id }
+    return { hook: hook, postId: postRow.id }
   } catch (error) {
     console.error('Failed to parse hook response:', error)
     console.error('Raw response:', response)
@@ -172,13 +157,8 @@ export async function generateHookForIdea(ideaId: number): Promise<{ hook: strin
     // Enhanced fallback with retry
     const retryPrompt = `Return ONLY valid JSON in this exact format:
 {
-  "hooks": [
-    {
-      "style": "stat/result",
-      "source_idea": "idea reference",
-      "hook": "simple hook text"
-    }
-  ],
+  "hook": "simple hook text",
+  "style": "stat/result",
   "notes": "brief explanation"
 }
 
@@ -190,7 +170,7 @@ Do not include any markdown, explanations, or additional text.`
       
       if (isValidJSON(retryCleaned)) {
         const retryParsed: HookResponse = JSON.parse(retryCleaned)
-        const firstHook = retryParsed.hooks[0]?.hook || 'No hook generated'
+        const hook = retryParsed.hook || 'No hook generated'
         
         const { data: postRow, error: postErr } = await db
           .from('posts')
@@ -198,14 +178,14 @@ Do not include any markdown, explanations, or additional text.`
             user_id: idea.user_id,
             idea_id: idea.id,
             post_content: '',
-            post_hook: firstHook,
+            post_hook: hook,
             status: 'draft'
           })
           .select('id')
           .single()
         if (postErr) throw postErr
 
-        return { hook: firstHook, postId: postRow.id }
+        return { hook: hook, postId: postRow.id }
       }
     } catch (retryError) {
       console.error('Retry also failed:', retryError)

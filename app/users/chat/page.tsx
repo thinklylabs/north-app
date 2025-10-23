@@ -2,6 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Old_Standard_TT } from "next/font/google";
+import { Loader2 } from "lucide-react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+
+const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
 
 interface ChatMessage {
   id: string;
@@ -75,75 +80,90 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto h-screen flex flex-col">
-      <div className="bg-white border-b p-4">
-        <h1 className="text-2xl font-bold">RAG Chat Interface</h1>
-        <p className="text-gray-600">Ask questions about your knowledge base</p>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 && (
-          <div className="text-center text-gray-500 mt-8">
-            <p>Start a conversation by asking a question!</p>
-            <p className="text-sm mt-2">Try: "What did we discuss in the last meeting?"</p>
-          </div>
-        )}
-
-        {messages.map(message => (
-          <div
-            key={message.id}
-            className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
-          >
-            <div
-              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                message.isUser
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-800'
-              }`}
-            >
-              <p className="whitespace-pre-wrap">{message.content}</p>
-              {message.contextUsed && (
-                <p className="text-xs opacity-75 mt-1">
-                  Used {message.contextUsed} context sources
-                </p>
-              )}
-            </div>
-          </div>
-        ))}
-
-        {loading && (
-          <div className="flex justify-start">
-            <div className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg">
-              <p>Thinking...</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mx-4 rounded">
-          {error}
+    <div className="min-h-screen w-full bg-[#FCF9F5] text-[#0D1717]">
+      <div className="flex items-center justify-between p-6 md:px-10">
+        <div className="flex items-center gap-3">
+          <SidebarTrigger />
+          <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Users  {'>'}  Chat</span>
         </div>
-      )}
+      </div>
 
-      <div className="border-t p-4">
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Ask a question about your knowledge base..."
-            className="flex-1 border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={loading}
-          />
-          <button
-            onClick={sendMessage}
-            disabled={loading || !input.trim()}
-            className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 disabled:opacity-50"
-          >
-            Send
-          </button>
+      <div className="px-6 md:px-10 pb-24">
+        <h1 className={`${oldStandard.className} text-[30px] leading-[1.236em] mt-[30px] text-center`}>Retrieval-Augmented Generation Chat Interface</h1>
+        
+        <div className="mt-3 text-center">
+          <p className="text-[12px] leading-[1.3em] text-[#6F7777]">
+            Ask questions about your knowledge base
+          </p>
+        </div>
+
+        <div className="mt-8 max-w-4xl mx-auto">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.length === 0 && (
+              <div className="text-center text-gray-500 mt-30">
+                <p className="text-[12px]">Start a conversation by asking a question!</p>
+                <p className="text-[10px] mt-2">Try: "What did we discuss in the last meeting?"</p>
+              </div>
+            )}
+
+            {messages.map(message => (
+              <div
+                key={message.id}
+                className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                    message.isUser
+                      ? 'bg-[#1DC6A1] text-white'
+                      : 'bg-gray-200 text-gray-800'
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  {message.contextUsed && (
+                    <p className="text-xs opacity-75 mt-1">
+                      Used {message.contextUsed} context sources
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#1DC6A1]" />
+                  <p>Thinking...</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mx-4 rounded">
+              {error}
+            </div>
+          )}
+
+          <div className="border-t p-4 bg-[#FCF9F5]">
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Ask a question about your knowledge base..."
+                className="flex-1 border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DC6A1]"
+                disabled={loading}
+              />
+              <button
+                onClick={sendMessage}
+                disabled={loading || !input.trim()}
+                className="bg-[#1DC6A1] text-white px-6 py-2 rounded-lg hover:bg-[#1DC6A1]/90 disabled:opacity-50"
+              >
+                Send
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -2,7 +2,6 @@
 
 import { Old_Standard_TT } from "next/font/google";
 import { Button } from "@/components/ui/button";
-import LogoutButton from "@/components/LogoutButton";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import Nango from "@nangohq/frontend";
@@ -32,6 +31,11 @@ export default function LibraryPage() {
   const [tldvApiKey, setTldvApiKey] = useState("");
   const [tldvImportMessage, setTldvImportMessage] = useState("");
   const [tldvModalOpen, setTldvModalOpen] = useState(false);
+  const [isManualRssModalOpen, setIsManualRssModalOpen] = useState(false);
+  const [manualRssUrls, setManualRssUrls] = useState([""]);
+  const [manualRssValidatedUrls, setManualRssValidatedUrls] = useState([false]);
+  const [manualRssImporting, setManualRssImporting] = useState(false);
+  const [manualRssImportMessage, setManualRssImportMessage] = useState("");
 
   // Context editor state
   const [contextLoading, setContextLoading] = useState(false);
@@ -124,6 +128,15 @@ export default function LibraryPage() {
     setSubstackImportMessage("");
   }
 
+  function openManualRssModal() {
+    setIsManualRssModalOpen(true);
+  }
+
+  function closeManualRssModal() {
+    setIsManualRssModalOpen(false);
+    setManualRssImportMessage("");
+  }
+
   // Load context when tab switches to context
   useEffect(() => {
     async function run() {
@@ -183,6 +196,18 @@ export default function LibraryPage() {
     const isValid = /^https?:\/\/[a-z0-9-]+\.substack\.com(\/.*)?$/i.test(value);
     newValidated[index] = isValid;
     setValidatedUrls(newValidated);
+  }
+
+  function handleManualRssUrlChange(index: number, value: string) {
+    const newUrls = [...manualRssUrls];
+    newUrls[index] = value.trim();
+    setManualRssUrls(newUrls);
+    
+    // Validate URL format
+    const newValidated = [...manualRssValidatedUrls];
+    const isValid = /^https?:\/\/.+/.test(value);
+    newValidated[index] = isValid;
+    setManualRssValidatedUrls(newValidated);
   }
   
   async function handleSlackConnect() {
@@ -275,6 +300,26 @@ export default function LibraryPage() {
     setValidatedUrls(vals);
   }
 
+  function addManualRssField() {
+    setManualRssUrls([...manualRssUrls, ""]);
+    setManualRssValidatedUrls([...manualRssValidatedUrls, false]);
+  }
+  
+  function removeManualRssField(index?: number) {
+    const targetIndex = index === undefined ? manualRssUrls.length - 1 : index;
+    if (manualRssUrls.length <= 1) {
+      setManualRssUrls([""]);
+      setManualRssValidatedUrls([false]);
+      return;
+    }
+    const urls = [...manualRssUrls];
+    const vals = [...manualRssValidatedUrls];
+    urls.splice(targetIndex, 1);
+    vals.splice(targetIndex, 1);
+    setManualRssUrls(urls);
+    setManualRssValidatedUrls(vals);
+  }
+
   async function handleImportSubstack() {
     const validUrls = substackUrls.filter((_, i) => validatedUrls[i]);
     if (validUrls.length === 0) {
@@ -309,6 +354,43 @@ export default function LibraryPage() {
       setSubstackImportMessage(e?.message || "Import failed. Please check the URLs and try again.");
     } finally {
       setSubstackImporting(false);
+    }
+  }
+
+  async function handleImportManualRss() {
+    const validUrls = manualRssUrls.filter((_, i) => manualRssValidatedUrls[i]);
+    if (validUrls.length === 0) {
+      setManualRssImportMessage("Please provide at least one valid URL.");
+      return;
+    }
+
+    setManualRssImporting(true);
+    setManualRssImportMessage("");
+
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      const token = session?.access_token;
+      if (!token) throw new Error("You must be logged in");
+
+      const res = await fetch("/api/import-manual-rss", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ urls: validUrls }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Import failed");
+
+      setManualRssImportMessage(json?.message || "Import successful!");
+    } catch (e: any) {
+      setManualRssImportMessage(e?.message || "Import failed. Please check the URLs and try again.");
+    } finally {
+      setManualRssImporting(false);
     }
   }
 
@@ -348,7 +430,6 @@ export default function LibraryPage() {
           <SidebarTrigger />
           <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Users  {'>'}  Library</span>
         </div>
-        <LogoutButton />
       </div>
 
       <div className="px-6 md:px-10 pb-24">
@@ -464,7 +545,7 @@ export default function LibraryPage() {
           {activeTab === "sources" ? (
             // Grid of sources (Context)
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-[1155px]">
-              {Array.from({ length: 9 }).map((_, i) => (
+              {Array.from({ length: 10 }).map((_, i) => (
                 i === 0 ? (
                   <div
                     key={i}
@@ -592,6 +673,29 @@ export default function LibraryPage() {
                       Connect
                     </Button>
                   </div>
+                ) : i === 5 ? (
+                  <div
+                    key={i}
+                    className="h-[72px] rounded-[10px] bg-[#162022] relative grid grid-cols-[auto_1fr_auto] items-center px-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-[40px] h-[40px] rounded-[4px] bg-[#1DC6A1] flex items-center justify-center">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
+                          <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="flex justify-center">
+                      <span className="text-[16px] leading-[1.3em] text-white/90 text-center">Manual RSS</span>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={openManualRssModal}
+                      className="h-[27px] rounded-[5px] bg-[#1DC6A1] hover:bg-[#19b391] text-white px-3 py-0 text-[10px] cursor-pointer"
+                    >
+                      Connect
+                    </Button>
+                  </div>
                 ) : (
                   <div
                     key={i}
@@ -679,7 +783,7 @@ export default function LibraryPage() {
                 </div>
               </div>
 
-              <div className="rounded-[10px] bg-white border border-[#0D1717]/10 p-5">
+              <div className="rounded-[10px] bg-white border border-[#0D1717]/10 p-5 flex flex-col h-full">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-[16px] text-[#0D1717]">Long-term Memory</h3>
@@ -691,10 +795,10 @@ export default function LibraryPage() {
                     value={longTermMemory}
                     onChange={(e) => setLongTermMemory(e.target.value)}
                     placeholder="Memory summary..."
-                    className="w-full h-[260px] rounded-[6px] border border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
+                    className="w-full h-[400px] rounded-[6px] border border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
                   />
                 </div>
-                <div className="mt-4 flex justify-end">
+                <div className="flex justify-end">
                   <Button
                     type="button"
                     onClick={async () => {
@@ -719,7 +823,7 @@ export default function LibraryPage() {
                       }
                     }}
                     disabled={savingMemory}
-                    className="h-[30px] rounded-[5px] bg-[#A4D6CB] hover:bg-[#97CFC3] text-[#0D1717] px-3 py-0 text-[10px] cursor-pointer disabled:opacity-60"
+                    className="h-[30px] rounded-[5px] bg-[#1DC6A1] hover:bg-[#19b391] text-white px-3 py-0 text-[10px] cursor-pointer disabled:opacity-60"
                   >
                     {savingMemory ? 'Saving…' : 'Save'}
                   </Button>
@@ -1011,6 +1115,108 @@ export default function LibraryPage() {
                       <p className="text-[12px] text-[#0369a1]">{tldvImportMessage}</p>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Manual RSS Modal */}
+          {isManualRssModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div
+                className="absolute inset-0 bg-black/20 backdrop-blur-[6px]"
+                onClick={closeManualRssModal}
+              />
+              <div className="relative z-10 w-[640px] max-w-[92vw] rounded-[8px] bg-white shadow-xl border border-[#0D1717]/10">
+                <div className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h2 className={`${oldStandard.className} text-[18px] leading-[1.2] text-[#0D1717]`}>
+                        Add your favorite blogs!
+                      </h2>
+                      <p className="mt-3 text-[10px] leading-[1.3em] text-[#0D1717]/80 max-w-[560px]">
+                        Enter any blog URL (Medium, personal blogs, etc.) and we'll extract and process the content for you.
+                      </p>
+                    </div>
+                    <button
+                      aria-label="Close"
+                      className="ml-4 h-6 w-6 inline-flex items-center justify-center rounded hover:bg-black/5 text-[#0D1717]/70 cursor-pointer"
+                      onClick={closeManualRssModal}
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <div className="mt-5 space-y-3">
+                    {manualRssUrls.map((url, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={url}
+                          onChange={(e) => handleManualRssUrlChange(index, e.target.value)}
+                          placeholder="https://medium.com/@username/article"
+                          className="flex-1 h-[30px] rounded-[5px] border border-[#0D1717]/15 bg-[#F4F4F4] px-3 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30"
+                        />
+                        <div className={`w-[30px] h-[30px] rounded-[5px] flex items-center justify-center ${
+                          manualRssValidatedUrls[index] ? 'bg-[#1DC6A1]' : 'bg-[#7FA9A1]'
+                        }`}>
+                          <svg
+                            width="11"
+                            height="8"
+                            viewBox="0 0 11 8"
+                            fill="none"
+                            className="text-white"
+                          >
+                            <path
+                              d="M1 4L3.5 6.5L9.5 1"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </div>
+                        <button
+                          type="button"
+                          className="h-[30px] px-2 rounded-[5px] bg-[#F4F4F4] text-[#0D1717] text-[11px] cursor-pointer border border-[#0D1717]/10 hover:bg-[#e9e9e9]"
+                          onClick={() => removeManualRssField(index)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="h-[28px] px-3 rounded-[6px] bg-[#A4D6CB] text-[#0D1717] text-[11px] cursor-pointer"
+                      onClick={addManualRssField}
+                    >
+                      Add +
+                    </button>
+                    <button
+                      type="button"
+                      className="h-[28px] px-3 rounded-[6px] bg-[#F4F4F4] text-[#0D1717] text-[11px] cursor-pointer border border-[#0D1717]/10 hover:bg-[#e9e9e9]"
+                      onClick={() => removeManualRssField()}
+                    >
+                      Remove Last
+                    </button>
+                  </div>
+
+                  <div className="mt-5">
+                    <button
+                      type="button"
+                      className="w-full h-[32px] rounded-[6px] bg-[#1DC6A1] text-white text-[12px] cursor-pointer disabled:opacity-60 hover:bg-[#19b391]"
+                      disabled={manualRssImporting || manualRssValidatedUrls.every(v => !v)}
+                      onClick={handleImportManualRss}
+                    >
+                      {manualRssImporting ? "Importing..." : "Import URLs"}
+                    </button>
+                    {manualRssImportMessage && (
+                      <p className="mt-3 text-[12px] text-center text-[#0D1717]/80">{manualRssImportMessage}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

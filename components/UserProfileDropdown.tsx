@@ -127,22 +127,22 @@ export function UserProfileDropdown() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="flex items-center gap-2 p-2 hover:bg-[#F6F2EC] w-full justify-start group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:h-[48px] group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:mx-auto"
+          className="flex items-center gap-2 p-2 hover:bg-[#F6F2EC] w-full justify-start group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:h-[48px] group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-start group-data-[collapsible=icon]:items-center"
         >
           <div className="w-[27px] h-[27px] rounded-[5px] bg-[#B1DAD0] flex items-center justify-center text-[10px] font-medium text-[#0D1717] group-data-[collapsible=icon]:w-[32px] group-data-[collapsible=icon]:h-[32px] group-data-[collapsible=icon]:text-[12px] group-data-[collapsible=icon]:font-semibold group-data-[collapsible=icon]:rounded-[6px]">
             {initials}
           </div>
-          <div className="group-data-[collapsible=icon]:hidden">
-            <p className="font-sans text-[10px] leading-[1.3em] font-medium">{displayName}</p>
-            <p className="font-sans text-[10px] leading-[1.3em] text-[#6F7777]">{user.email}</p>
+          <div className="group-data-[collapsible=icon]:hidden text-left">
+            <p className="font-sans text-[10px] leading-[1.3em] font-medium text-left">{displayName}</p>
+            <p className="font-sans text-[10px] leading-[1.3em] text-[#6F7777] text-left">{user.email}</p>
           </div>
           <ChevronUp className="w-3 h-3 ml-auto group-data-[collapsible=icon]:hidden" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
-        side="top" 
-        align="end" 
-        className="w-[280px] p-0 bg-[#FCF9F5] border border-[#171717]/10 rounded-[8px] shadow-[0_10px_30px_rgba(13,23,23,0.2)]"
+        side="right" 
+        align="start" 
+        className="w-[280px] p-0 bg-[#FCF9F5] border border-[#171717]/10 rounded-[8px] shadow-[0_10px_30px_rgba(13,23,23,0.2)] mb-2"
       >
         {/* Header */}
         <div className="p-4 border-b border-[#171717]/10">

@@ -2,7 +2,6 @@
 
 import { Old_Standard_TT } from "next/font/google";
 import { Button } from "@/components/ui/button";
-import LogoutButton from "@/components/LogoutButton";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Copy, Trash2, ArrowUpDown, Filter, Cloud, ArrowRight } from "lucide-react";
@@ -305,7 +304,6 @@ export default function PostsPage() {
           <SidebarTrigger />
           <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Users  {'>'}  Posts</span>
         </div>
-        <LogoutButton />
       </div>
 
       <div className="px-6 md:px-10 pb-24">

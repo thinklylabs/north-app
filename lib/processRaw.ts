@@ -29,7 +29,7 @@ export async function processRawDocument(rawId: number): Promise<{ sectionsCreat
   if (srcErr) throw srcErr
   if (!source) throw new Error('Content source not found for raw document')
 
-  const sourceType = source.source_type as 'thoughts' | 'slack_messages' | 'substack_feeds' | 'files' | 'notion'
+  const sourceType = source.source_type as 'thoughts' | 'slack_messages' | 'substack_feeds' | 'files' | 'notion' | 'manual_rss'
 
   // 2) Chunk
   const chunks = chunkBySourceType(raw.content, sourceType, raw.metadata || {})

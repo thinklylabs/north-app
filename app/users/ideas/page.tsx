@@ -1,7 +1,6 @@
 "use client";
 
 import { Old_Standard_TT } from "next/font/google";
-import LogoutButton from "@/components/LogoutButton";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -297,7 +296,6 @@ export default function IdeasPage() {
           <SidebarTrigger />
           <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Users  {'>'}  Ideas</span>
         </div>
-        <LogoutButton />
       </div>
 
       <div className="px-6 md:px-10 pb-24">
@@ -619,141 +617,146 @@ export default function IdeasPage() {
               onClick={() => setSelected(null)}
             >
               <div
-                className="w-full max-w-[920px] rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px]"
+                className="w-full max-w-[90vw] max-h-[90vh] rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px] overflow-hidden flex flex-col"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header */}
-                <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5] rounded-t-[10px]">
+                <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5] rounded-t-[10px] flex-shrink-0">
                   <h3 className={`${oldStandard.className} text-[16px] leading-[1.3em] text-[#0D1717] font-bold`}>Idea</h3>
                   <button
                     type="button"
-                    className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer"
+                    className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
                     aria-label="Close"
                     onClick={() => setSelected(null)}
                   >
                     ✕
                   </button>
                 </div>
-                {insightForIdea ? (
-                  <div className="px-5 pt-2 text-[11px] text-[#6F7777]">
-                    <div className="font-medium text-[#0D1717] mb-1">Insight</div>
-                    <pre className="text-[11px] whitespace-pre-wrap bg-[#F6F2EC] text-[#0D1717] rounded-[8px] p-2 max-h-[160px] overflow-auto">{JSON.stringify(insightForIdea.insight, null, 2)}</pre>
+                
+                {/* Scrollable content area */}
+                <div className="flex-1 overflow-y-auto">
+                  {insightForIdea ? (
+                    <div className="px-5 pt-2 text-[11px] text-[#6F7777]">
+                      <div className="font-medium text-[#0D1717] mb-1">Insight</div>
+                      <pre className="text-[11px] whitespace-pre-wrap bg-[#F6F2EC] text-[#0D1717] rounded-[8px] p-2 max-h-[160px] overflow-auto">{JSON.stringify(insightForIdea.insight, null, 2)}</pre>
+                    </div>
+                  ) : null}
+                  {/* Editable content */}
+                  <div className="px-5 py-4 grid grid-cols-1 gap-3">
+                    <div>
+                      <div className={`mb-1.5 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Topic</div>
+                      <input
+                        value={editTopic}
+                        onChange={(e) => setEditTopic(e.target.value)}
+                        placeholder="Topic"
+                        className={`w-full text-[12px] text-[#0D1717] rounded-[8px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] px-3 py-2.5 outline-none`}
+                      />
+                    </div>
+                    <div>
+                      <div className={`mb-1.5 text-[12px] text-[#0D1717] ${oldStandard.className}`}>EQ</div>
+                      <textarea
+                        value={editEq}
+                        onChange={(e) => setEditEq(e.target.value)}
+                        placeholder="EQ"
+                        className={`w-full h-[100px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none`}
+                      />
+                    </div>
+                    <div>
+                      <div className={`mb-1.5 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Takeaway</div>
+                      <textarea
+                        value={editTakeaway}
+                        onChange={(e) => setEditTakeaway(e.target.value)}
+                        placeholder="Takeaway"
+                        className={`w-full h-[100px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none`}
+                      />
+                    </div>
                   </div>
-                ) : null}
-                {/* Editable content */}
-                <div className="px-5 py-4 grid grid-cols-1 gap-3">
-                  <div>
-                    <div className={`mb-1.5 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Topic</div>
-                    <input
-                      value={editTopic}
-                      onChange={(e) => setEditTopic(e.target.value)}
-                      placeholder="Topic"
-                      className={`w-full text-[12px] text-[#0D1717] rounded-[8px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] px-3 py-2.5 outline-none`}
-                    />
-                  </div>
-                  <div>
-                    <div className={`mb-1.5 text-[12px] text-[#0D1717] ${oldStandard.className}`}>EQ</div>
-                    <textarea
-                      value={editEq}
-                      onChange={(e) => setEditEq(e.target.value)}
-                      placeholder="EQ"
-                      className={`w-full h-[100px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none`}
-                    />
-                  </div>
-                  <div>
-                    <div className={`mb-1.5 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Takeaway</div>
-                    <textarea
-                      value={editTakeaway}
-                      onChange={(e) => setEditTakeaway(e.target.value)}
-                      placeholder="Takeaway"
-                      className={`w-full h-[100px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none`}
-                    />
-                  </div>
-                </div>
-                {/* Feedback thread */}
-                <div className="px-5 pb-4">
-                  <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Feedback thread</div>
-                  <div className="max-h-[180px] overflow-auto rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-white p-3 mb-3">
-                    {loadingThread ? (
-                      <div className="text-[11px] text-[#6F7777]">Loading feedback…</div>
-                    ) : threadMessages.length === 0 ? (
-                      <div className="text-[11px] text-[#6F7777]">No feedback yet.</div>
-                    ) : (
-                      <div className="space-y-2">
-                        {threadMessages.map(m => (
-                          <div key={m.id} className="text-[12px]">
-                            <div className="flex items-center gap-2">
-                              <span className={`inline-flex items-center rounded-[6px] px-1.5 py-[1px] text-[10px] ${m.authorRole === 'admin' ? 'bg-[#E5EDFF] text-[#1E40AF]' : 'bg-[#EDE8E1] text-[#6F7777]'}`}>{m.authorRole}</span>
-                              <span className="text-[#6F7777] text-[10px]">{new Date(m.createdAt).toLocaleString()}</span>
+                  {/* Feedback thread */}
+                  <div className="px-5 pb-4">
+                    <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Feedback thread</div>
+                    <div className="max-h-[180px] overflow-auto rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-white p-3 mb-3">
+                      {loadingThread ? (
+                        <div className="text-[11px] text-[#6F7777]">Loading feedback…</div>
+                      ) : threadMessages.length === 0 ? (
+                        <div className="text-[11px] text-[#6F7777]">No feedback yet.</div>
+                      ) : (
+                        <div className="space-y-2">
+                          {threadMessages.map(m => (
+                            <div key={m.id} className="text-[12px]">
+                              <div className="flex items-center gap-2">
+                                <span className={`inline-flex items-center rounded-[6px] px-1.5 py-[1px] text-[10px] ${m.authorRole === 'admin' ? 'bg-[#E5EDFF] text-[#1E40AF]' : 'bg-[#EDE8E1] text-[#6F7777]'}`}>{m.authorRole}</span>
+                                <span className="text-[#6F7777] text-[10px]">{new Date(m.createdAt).toLocaleString()}</span>
+                              </div>
+                              <div className="mt-1 text-[#0D1717] whitespace-pre-wrap">{m.body}</div>
                             </div>
-                            <div className="mt-1 text-[#0D1717] whitespace-pre-wrap">{m.body}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Add feedback</div>
-                  <div className="flex items-start gap-2">
-                    <textarea
-                      value={newIdeaFeedback}
-                      onChange={(e) => setNewIdeaFeedback(e.target.value)}
-                      placeholder="Suggest changes, ask questions…"
-                      className="flex-1 h-[90px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none"
-                    />
-                    <Button
-                      type="button"
-                      className="h-[32px] px-3 rounded-[6px] bg-[#1DC6A1] text-white hover:bg-[#19b391] text-[12px] cursor-pointer"
-                      disabled={sendingIdeaFeedback || !selected || !newIdeaFeedback.trim()}
-                      onClick={async () => {
-                        if (!selected) return;
-                        const supabase = createClient();
-                        const { data: { session } } = await supabase.auth.getSession();
-                        const token = session?.access_token;
-                        if (!token) {
-                          toast.error('Not authenticated');
-                          return;
-                        }
-                        try {
-                          setSendingIdeaFeedback(true);
-                          const res = await fetch('/api/feedbacks', {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              Authorization: `Bearer ${token}`,
-                            },
-                            body: JSON.stringify({
-                              feedback_for: 'idea',
-                              target_id: selected.id,
-                              feedback: newIdeaFeedback.trim(),
-                            }),
-                          });
-                          if (!res.ok) {
-                            const j = await res.json().catch(() => ({}));
-                            throw new Error(j.error || 'Failed to send feedback');
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Add feedback</div>
+                    <div className="flex items-start gap-2">
+                      <textarea
+                        value={newIdeaFeedback}
+                        onChange={(e) => setNewIdeaFeedback(e.target.value)}
+                        placeholder="Suggest changes, ask questions…"
+                        className="flex-1 h-[90px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none"
+                      />
+                      <Button
+                        type="button"
+                        className="h-[32px] px-3 rounded-[6px] bg-[#1DC6A1] text-white hover:bg-[#19b391] text-[12px] cursor-pointer"
+                        disabled={sendingIdeaFeedback || !selected || !newIdeaFeedback.trim()}
+                        onClick={async () => {
+                          if (!selected) return;
+                          const supabase = createClient();
+                          const { data: { session } } = await supabase.auth.getSession();
+                          const token = session?.access_token;
+                          if (!token) {
+                            toast.error('Not authenticated');
+                            return;
                           }
-                          toast.success('Feedback sent');
-                          setNewIdeaFeedback('');
-                          // refresh messages
                           try {
-                            const r = await fetch(`/api/feedbacks?ideaId=${selected.id}`, { headers: { Authorization: `Bearer ${token}` } });
-                            if (r.ok) {
-                              const j = await r.json();
-                              setThreadMessages(Array.isArray(j?.messages) ? j.messages : []);
+                            setSendingIdeaFeedback(true);
+                            const res = await fetch('/api/feedbacks', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${token}`,
+                              },
+                              body: JSON.stringify({
+                                feedback_for: 'idea',
+                                target_id: selected.id,
+                                feedback: newIdeaFeedback.trim(),
+                              }),
+                            });
+                            if (!res.ok) {
+                              const j = await res.json().catch(() => ({}));
+                              throw new Error(j.error || 'Failed to send feedback');
                             }
-                          } catch {}
-                        } catch (e: any) {
-                          toast.error(e?.message || 'Failed to send feedback');
-                        } finally {
-                          setSendingIdeaFeedback(false);
-                        }
-                      }}
-                    >
-                      {sendingIdeaFeedback ? 'Sending…' : 'Send'}
-                    </Button>
+                            toast.success('Feedback sent');
+                            setNewIdeaFeedback('');
+                            // refresh messages
+                            try {
+                              const r = await fetch(`/api/feedbacks?ideaId=${selected.id}`, { headers: { Authorization: `Bearer ${token}` } });
+                              if (r.ok) {
+                                const j = await r.json();
+                                setThreadMessages(Array.isArray(j?.messages) ? j.messages : []);
+                              }
+                            } catch {}
+                          } catch (e: any) {
+                            toast.error(e?.message || 'Failed to send feedback');
+                          } finally {
+                            setSendingIdeaFeedback(false);
+                          }
+                        }}
+                      >
+                        {sendingIdeaFeedback ? 'Sending…' : 'Send'}
+                      </Button>
+                    </div>
                   </div>
                 </div>
-                {/* Footer Buttons */}
-                <div className="px-5 pb-4 flex flex-wrap items-center gap-2">
+                
+                {/* Footer Buttons - Fixed at bottom */}
+                <div className="px-5 pb-4 flex flex-wrap items-center gap-2 flex-shrink-0 border-t border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5]">
                   <Button
                     type="button"
                     className="h-[30px] px-3 rounded-[6px] bg-[#1DC6A1] text-white hover:bg-[#19b391] text-[12px] cursor-pointer"

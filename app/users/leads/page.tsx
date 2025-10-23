@@ -1,7 +1,6 @@
 "use client";
 
 import { Old_Standard_TT } from "next/font/google";
-import LogoutButton from "@/components/LogoutButton";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
@@ -14,7 +13,6 @@ export default function LeadsPage() {
           <SidebarTrigger />
           <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Users  {'>'}  Leads</span>
         </div>
-        <LogoutButton />
       </div>
 
       <div className="px-6 md:px-10 pb-24">

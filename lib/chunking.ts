@@ -1,4 +1,4 @@
-type SourceType = 'thoughts' | 'slack_messages' | 'substack_feeds' | 'files' | 'notion' | 'tldv' | 'linkedin_profile'
+type SourceType = 'thoughts' | 'slack_messages' | 'substack_feeds' | 'files' | 'notion' | 'tldv' | 'linkedin_profile' | 'manual_rss'
 
 export interface Chunk {
   content: string
@@ -40,6 +40,12 @@ export function chunkBySourceType(
         provider_id: metadata?.provider_id,
         first_name: metadata?.first_name,
         last_name: metadata?.last_name,
+      })
+    case 'manual_rss':
+      return chunkGeneric(content, metadata, {
+        type: 'manual_rss',
+        url: metadata?.url,
+        format_used: metadata?.format_used,
       })
     case 'thoughts':
     default:

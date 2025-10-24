@@ -289,18 +289,10 @@ export default function DashboardPage() {
         <h2 className={`${oldStandard.className} text-[16px] leading-[1.236em] mt-[120px]`}>Metrics</h2>
 
         <div className="mt-[20px] grid grid-cols-1 md:grid-cols-2 gap-[22px]">
-          <div className="h-[235px] rounded-[10px] bg-[#171717] text-[#FCF9F5] p-4">
-            <span className="text-[12px] font-medium">Activity</span>
-          </div>
-          <div className="h-[235px] rounded-[10px] bg-[#171717] text-[#FCF9F5] p-4">
-            <span className="text-[12px] font-medium">Impressions</span>
-          </div>
-          <div className="h-[235px] rounded-[10px] bg-[#171717] text-[#FCF9F5] p-4">
-            <span className="text-[12px] font-medium">Engagements</span>
-          </div>
-          <div className="h-[235px] rounded-[10px] bg-[#171717] text-[#FCF9F5] p-4">
-            <span className="text-[12px] font-medium">Followers</span>
-          </div>
+          <div className="h-[235px] rounded-[10px] bg-[#113434]" />
+          <div className="h-[235px] rounded-[10px] bg-[#113434]" />
+          <div className="h-[235px] rounded-[10px] bg-[#113434]" />
+          <div className="h-[235px] rounded-[10px] bg-[#113434]" />
         </div>
       </div>
     </div>

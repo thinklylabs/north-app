@@ -4,7 +4,7 @@ import { Old_Standard_TT } from "next/font/google";
 import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Copy, Trash2, ArrowUpDown, Filter, Cloud, ArrowRight } from "lucide-react";
+import { Copy, Trash2, ArrowUpDown, Filter, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
@@ -34,7 +34,6 @@ export default function PostsPage() {
   const [editContent, setEditContent] = useState<string>("");
   const [editFeedback, setEditFeedback] = useState<string>("");
   const [saving, setSaving] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [sendingFeedback, setSendingFeedback] = useState(false);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [feedbackMessages, setFeedbackMessages] = useState<{
@@ -45,9 +44,10 @@ export default function PostsPage() {
     createdAt: string;
   }[]>([]);
   const [insightForThread, setInsightForThread] = useState<{ id: number; insight: any } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPosts, setSelectedPosts] = useState<Set<number>>(new Set());
+  const [showLinkedInConfirm, setShowLinkedInConfirm] = useState(false);
+  const [postingToLinkedIn, setPostingToLinkedIn] = useState(false);
   const [sortField, setSortField] = useState<'created_at' | 'status'>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -473,7 +473,6 @@ export default function PostsPage() {
                                 setEditHook(hook);
                                 setEditContent(content);
                                 setEditFeedback("");
-                                setImagePreview(null);
                               }}
                             >
                               {hook}
@@ -508,7 +507,6 @@ export default function PostsPage() {
                                 setEditHook(hook);
                                 setEditContent(content);
                                 setEditFeedback("");
-                                setImagePreview(null);
                               }}
                             >
                               {content}
@@ -616,9 +614,9 @@ export default function PostsPage() {
                 </button>
               </div>
               {insightForThread ? (
-                <div className="px-5 pt-2 text-[11px] text-[#6F7777]">
+                <div className="px-5 pt-2 text-[10px] text-[#6F7777]">
                   <div className="font-medium text-[#0D1717] mb-1">Insight</div>
-                  <pre className="text-[11px] whitespace-pre-wrap bg-[#F6F2EC] text-[#0D1717] rounded-[8px] p-2 max-h-[160px] overflow-auto">{JSON.stringify(insightForThread.insight, null, 2)}</pre>
+                  <pre className="text-[10px] whitespace-pre-wrap bg-[#F6F2EC] text-[#0D1717] rounded-[6px] p-2 max-h-[80px] overflow-auto">{JSON.stringify(insightForThread.insight, null, 2)}</pre>
                 </div>
               ) : null}
               {/* Content */}
@@ -629,7 +627,7 @@ export default function PostsPage() {
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     placeholder="Write your post…"
-                    className={`w-full h-[180px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none focus:ring-0 ${oldStandard.className}`}
+                    className={`w-full h-[120px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none focus:ring-0 ${oldStandard.className}`}
                   />
                   <div className={`mt-3 mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Hook</div>
                   <input
@@ -639,57 +637,6 @@ export default function PostsPage() {
                     className={`w-full text-[12px] text-[#0D1717] rounded-[8px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] px-3 py-2.5 outline-none ${oldStandard.className}`}
                   />
 
-                  {/* Upload area */}
-                  <div className="mt-3 rounded-[10px] border border-dashed border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-4 text-center">
-                    {imagePreview ? (
-                      <div className="flex flex-col items-center gap-3">
-                        <img src={imagePreview} alt="Preview" className="max-h-[180px] rounded-[8px] object-contain" />
-                        <div className="flex items-center gap-2 justify-center">
-                          <Button
-                            type="button"
-                            className="h-[28px] px-3 rounded-[6px] border border-[#171717]/20 [border-width:0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[11px] cursor-pointer"
-                            onClick={() => setImagePreview(null)}
-                          >
-                            Remove
-                          </Button>
-                          <Button
-                            type="button"
-                            className="h-[28px] px-3 rounded-[6px] border border-[#1DC6A1] text-[#1DC6A1] bg-[#FCF9F5] hover:bg-[#EDE8E1] text-[11px] cursor-pointer"
-                            onClick={() => fileInputRef.current?.click()}
-                          >
-                            Replace image
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-2 text-[#0D1717]">
-                        <div className="w-[40px] h-[28px] rounded-[6px] flex items-center justify-center">
-                          <Cloud className="w-[26px] h-[26px]" color="#1DC6A1" />
-                        </div>
-                        <div className={`text-[11px] ${oldStandard.className} text-[#0D1717]`}>Choose a file or drag & drop it here</div>
-                        <Button
-                          type="button"
-                          className="mt-2 h-[28px] px-3 rounded-[6px] border border-[#171717]/20 [border-width:0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[11px] cursor-pointer"
-                          onClick={() => fileInputRef.current?.click()}
-                        >
-                          Upload
-                        </Button>
-                      </div>
-                    )}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files && e.target.files[0]
-                        if (!file) return
-                        const reader = new FileReader()
-                        reader.onload = () => setImagePreview(String(reader.result || ''))
-                        reader.readAsDataURL(file)
-                      }}
-                    />
-                  </div>
                 </div>
                 <div>
                   <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Feedback thread</div>
@@ -718,7 +665,7 @@ export default function PostsPage() {
                       value={editFeedback}
                       onChange={(e) => setEditFeedback(e.target.value)}
                       placeholder="Didn't like the post? Want some improvements, comment here, we will update the post in 24h"
-                      className={`w-full h-[220px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 pr-10 outline-none focus:ring-0 ${oldStandard.className}`}
+                      className={`w-full h-[140px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 pr-10 outline-none focus:ring-0 ${oldStandard.className}`}
                     />
                     <button
                       type="button"
@@ -816,6 +763,130 @@ export default function PostsPage() {
                 >
                   Copy
                 </Button>
+                <Button
+                  type="button"
+                  className="h-[30px] px-3 rounded-[6px] bg-[#0077B5] text-white hover:bg-[#005885] text-[12px] cursor-pointer"
+                  disabled={postingToLinkedIn}
+                  onClick={() => setShowLinkedInConfirm(true)}
+                >
+                  {postingToLinkedIn ? 'Posting...' : 'Post directly to LinkedIn'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* LinkedIn Post Confirmation Modal */}
+        {showLinkedInConfirm && (
+          <div
+            className="fixed inset-0 z-60 flex items-center justify-center bg-[#0D1717]/20 backdrop-blur-[6px] p-4"
+            onClick={() => setShowLinkedInConfirm(false)}
+          >
+            <div
+              className="w-full max-w-2xl rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5] rounded-t-[10px]">
+                <h3 className={`${oldStandard.className} text-[16px] leading-[1.3em] text-[#0D1717] font-bold`}>Post to LinkedIn</h3>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer"
+                  aria-label="Close"
+                  onClick={() => setShowLinkedInConfirm(false)}
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="px-5 py-4">
+                <p className="text-[14px] text-[#0D1717] mb-4">
+                  Are you sure you want to post this directly to LinkedIn? This will publish the post immediately.
+                </p>
+                
+                {/* Preview Content - Side by Side Layout */}
+                <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Post Preview */}
+                  <div className="p-3 bg-[#F6F2EC] rounded-[8px] border border-[#171717]/10">
+                    <p className="text-[12px] text-[#6F7777] mb-2 font-medium">Post Preview:</p>
+                    <div className="text-[13px] text-[#0D1717] leading-[1.4] whitespace-pre-wrap max-h-[120px] overflow-y-auto">
+                      {editContent || selectedRow?.post_content || 'No content'}
+                    </div>
+                    {editHook && (
+                      <div className="mt-2 text-[12px] text-[#6F7777]">
+                        <span className="font-medium">Hook:</span> {editHook}
+                      </div>
+                    )}
+                  </div>
+                  
+                </div>
+                
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-[30px] px-3 rounded-[6px] border border-[#171717]/20 [border-width:0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[12px] cursor-pointer"
+                    onClick={() => setShowLinkedInConfirm(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    className="h-[30px] px-3 rounded-[6px] bg-[#0077B5] text-white hover:bg-[#005885] text-[12px] cursor-pointer"
+                    disabled={postingToLinkedIn}
+                    onClick={async () => {
+                      if (!selectedRow) return;
+                      
+                      try {
+                        setPostingToLinkedIn(true);
+                        
+                        const supabase = createClient();
+                        const { data: { session } } = await supabase.auth.getSession();
+                        const token = session?.access_token;
+                        
+                        if (!token) {
+                          toast.error('Not authenticated');
+                          return;
+                        }
+
+                        const response = await fetch('/api/linkedin/post', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                          },
+                          body: JSON.stringify({
+                            postId: selectedRow.id,
+                            imageData: null // No image upload functionality
+                          })
+                        });
+
+                        if (!response.ok) {
+                          const error = await response.json();
+                          throw new Error(error.error || 'Failed to post to LinkedIn');
+                        }
+
+                        toast.success('Posted to LinkedIn successfully!');
+                        setShowLinkedInConfirm(false);
+                        setSelectedRow(null);
+                        
+                        // Refresh posts list to show updated status
+                        const res = await fetch('/api/posts', {
+                          headers: { Authorization: `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                          const json = await res.json();
+                          setPosts(json.posts || []);
+                        }
+                      } catch (error: any) {
+                        toast.error(error.message || 'Failed to post to LinkedIn');
+                      } finally {
+                        setPostingToLinkedIn(false);
+                      }
+                    }}
+                  >
+                    {postingToLinkedIn ? 'Posting...' : 'Post to LinkedIn'}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

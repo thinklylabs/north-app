@@ -95,6 +95,12 @@ export default function Signin() {
 
               <p className="font-sans text-[12px] leading-[1.3em] text-[#0D1717] mt-[12px] mb-[4px]">Password</p>
               <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] [border-width:0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
+              
+              <div className="w-full flex justify-end mt-[8px]">
+                <a href="/forgot-password" className="font-sans text-[12px] leading-[1.3em] text-[#1DC6A1] hover:underline">
+                  Forgot password?
+                </a>
+              </div>
             </div>
 
             <Button type="button" disabled={loading} onClick={handleSignin} className="mt-[10px] w-[326px] rounded-[5px] bg-[#1DC6A1] hover:bg-[#1DC6A1] flex items-center justify-center py-[6px] h-auto cursor-pointer disabled:opacity-60">

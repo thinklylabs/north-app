@@ -19,6 +19,7 @@ export default function Onboarding() {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [step, setStep] = useState(1);
   const [icp, setIcp] = useState("");
   const [icpPainPoints, setIcpPainPoints] = useState("");
@@ -87,8 +88,10 @@ export default function Onboarding() {
             <div className="mt-[10px] w-[326px]">
               <Button
                 type="button"
-                className="w-full rounded-[5px] bg-[#1DC6A1] hover:bg-[#1DC6A1] flex items-center justify-center gap-[12px] py-[10px] px-[106px] h-auto cursor-pointer"
+                disabled={redirecting}
+                className="w-full rounded-[5px] bg-[#1DC6A1] hover:bg-[#1DC6A1] flex items-center justify-center gap-[12px] py-[10px] px-[106px] h-auto cursor-pointer disabled:opacity-60"
                 onClick={async () => {
+                  setRedirecting(true);
                   try {
                     const { data: { session } } = await supabase.auth.getSession();
                     const res = await fetch("/api/unipile/linkedin/hosted-link", {
@@ -101,22 +104,25 @@ export default function Onboarding() {
                     const json = await res.json();
                     if (!res.ok) {
                       toast.error("Failed to start LinkedIn connect", { description: json?.error || "Please try again." });
+                      setRedirecting(false);
                       return;
                     }
                     if (json?.url) {
                       window.location.href = json.url as string;
                     } else {
                       toast.error("Hosted link missing", { description: "Please try again." });
+                      setRedirecting(false);
                     }
                   } catch (e: any) {
                     toast.error("Something went wrong", { description: e?.message || "Please try again." });
+                    setRedirecting(false);
                   }
                 }}
               >
                 <div className="w-[10px] h-[10px]">
                   <Image src="/linkedin.svg" alt="LinkedIn" width={10} height={12} />
                 </div>
-                <span className="font-sans text-[11px] leading-[1.3em] text-white">Link your account</span>
+                <span className="font-sans text-[11px] leading-[1.3em] text-white">{redirecting ? "Redirecting..." : "Link your account"}</span>
               </Button>
             </div>
 

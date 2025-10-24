@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
         // Create or get content source
         const sourceType = 'manual_rss'
-        const sourceName = new URL(cleaned).hostname
+        const sourceName = cleaned  // Use full URL to differentiate between different blogs on same domain
         
         const { data: existingSource } = await supabaseAdmin
           .from('content_sources')
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
           .from('raw_content')
           .insert({ 
             source_id: sourceId, 
-            title: `Manual RSS: ${sourceName}`, 
+            title: `Manual RSS: ${new URL(cleaned).hostname}`, 
             content: content, 
             metadata: { url: cleaned, format_used: formatUsed } 
           })

@@ -2,9 +2,8 @@
 
 import { Old_Standard_TT } from "next/font/google";
 import { Button } from "@/components/ui/button";
-import LogoutButton from "@/components/LogoutButton";
 import { useEffect, useState } from "react";
-import { Copy, Trash2, ArrowUpDown } from "lucide-react";
+import { Copy, Trash2, ArrowUpDown, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
@@ -38,8 +37,25 @@ export default function AdminPostsPage() {
   const [owners, setOwners] = useState<Array<{ id: string; email: string | null; first_name: string | null; last_name: string | null; company_name: string | null }>>([])
   const [selectedText, setSelectedText] = useState<string | null>(null);
   const [selectedTitle, setSelectedTitle] = useState<string>("");
+  const [selectedRow, setSelectedRow] = useState<PostRow | null>(null);
+  const [editHook, setEditHook] = useState<string>("");
+  const [editContent, setEditContent] = useState<string>("");
+  const [editFeedback, setEditFeedback] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+  const [sendingFeedback, setSendingFeedback] = useState(false);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
+  const [feedbackMessages, setFeedbackMessages] = useState<{
+    id: number;
+    authorUserId: string;
+    authorRole: 'user' | 'admin';
+    body: string;
+    createdAt: string;
+  }[]>([]);
+  const [insightForThread, setInsightForThread] = useState<{ id: number; insight: any } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedPosts, setSelectedPosts] = useState<Set<number>>(new Set());
+  const [showLinkedInConfirm, setShowLinkedInConfirm] = useState(false);
+  const [postingToLinkedIn, setPostingToLinkedIn] = useState(false);
   const [sortField, setSortField] = useState<'created_at' | 'status'>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -255,14 +271,33 @@ export default function AdminPostsPage() {
     loadPosts();
   }, [ownerFilter]);
 
+  useEffect(() => {
+    async function loadFeedbackForSelected() {
+      if (!selectedRow) return;
+      try {
+        setLoadingFeedback(true);
+        const res = await fetch(`/api/feedbacks?postId=${selectedRow.id}`);
+        if (!res.ok) {
+          setFeedbackMessages([]);
+          return;
+        }
+        const json = await res.json();
+        setFeedbackMessages(Array.isArray(json?.messages) ? json.messages : []);
+        setInsightForThread(json?.insight ? json.insight : null);
+      } finally {
+        setLoadingFeedback(false);
+      }
+    }
+    loadFeedbackForSelected();
+  }, [selectedRow]);
+
   return (
     <div className="min-h-screen w-full bg-[#FCF9F5] text-[#0D1717]">
-      <div className="flex items-center justify-between p-6 md:px-10">
+      <div className="flex items-center p-6 md:px-10">
         <div className="flex items-center gap-3">
           <SidebarTrigger />
           <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Admin  {'>'}  Posts</span>
         </div>
-        <LogoutButton />
       </div>
 
       <div className="px-6 md:px-10 pb-24">
@@ -455,9 +490,10 @@ export default function AdminPostsPage() {
                               className="text-[12px] text-[#0D1717] truncate cursor-pointer"
                               title={hook}
                               onClick={() => {
-                                if (!hook) return;
-                                setSelectedTitle("Hook");
-                                setSelectedText(hook);
+                                setSelectedRow(row);
+                                setEditHook(hook);
+                                setEditContent(content);
+                                setEditFeedback("");
                               }}
                             >
                               {hook}
@@ -496,9 +532,10 @@ export default function AdminPostsPage() {
                               className="text-[12px] text-[#0D1717] truncate cursor-pointer"
                               title={content}
                               onClick={() => {
-                                if (!content) return;
-                                setSelectedTitle("Post");
-                                setSelectedText(content);
+                                setSelectedRow(row);
+                                setEditHook(hook);
+                                setEditContent(content);
+                                setEditFeedback("");
                               }}
                             >
                               {content}
@@ -584,46 +621,279 @@ export default function AdminPostsPage() {
           )}
         </div>
 
-        {selectedText && (
+        {selectedRow && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-            onClick={() => setSelectedText(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#0D1717]/20 backdrop-blur-[6px] p-4"
+            onClick={() => setSelectedRow(null)}
           >
             <div
-              className="w-full max-w-[720px] rounded-[10px] bg-white shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px]"
+              className="w-full max-w-[920px] rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px]"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3">
-                <h3 className="text-[16px] font-medium text-[#0D1717]">{selectedTitle}</h3>
-                <div className="flex items-center gap-2">
-                  <button
+              {/* Header */}
+              <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5] rounded-t-[10px]">
+                <h3 className={`${oldStandard.className} text-[16px] leading-[1.3em] text-[#0D1717] font-bold`}>Post</h3>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer"
+                  aria-label="Close"
+                  onClick={() => setSelectedRow(null)}
+                >
+                  ✕
+                </button>
+              </div>
+              {insightForThread ? (
+                <div className="px-5 pt-2 text-[10px] text-[#6F7777]">
+                  <div className="font-medium text-[#0D1717] mb-1">Insight</div>
+                  <pre className="text-[10px] whitespace-pre-wrap bg-[#F6F2EC] text-[#0D1717] rounded-[6px] p-2 max-h-[80px] overflow-auto">{JSON.stringify(insightForThread.insight, null, 2)}</pre>
+                </div>
+              ) : null}
+              {/* Content */}
+              <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Post</div>
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    placeholder="Write your post…"
+                    className={`w-full h-[120px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none focus:ring-0 ${oldStandard.className}`}
+                  />
+                  <div className={`mt-3 mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Hook</div>
+                  <input
+                    value={editHook}
+                    onChange={(e) => setEditHook(e.target.value)}
+                    placeholder="Hook"
+                    className={`w-full text-[12px] text-[#0D1717] rounded-[8px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] px-3 py-2.5 outline-none ${oldStandard.className}`}
+                  />
+                </div>
+                <div>
+                  <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Feedback thread</div>
+                  <div className="max-h-[180px] overflow-auto rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-white p-3 mb-3">
+                    {loadingFeedback ? (
+                      <div className="text-[11px] text-[#6F7777]">Loading feedback…</div>
+                    ) : feedbackMessages.length === 0 ? (
+                      <div className="text-[11px] text-[#6F7777]">No feedback yet.</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {feedbackMessages.map(m => (
+                          <div key={m.id} className="text-[12px]">
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex items-center rounded-[6px] px-1.5 py-[1px] text-[10px] ${m.authorRole === 'admin' ? 'bg-[#E5EDFF] text-[#1E40AF]' : 'bg-[#EDE8E1] text-[#6F7777]'}`}>{m.authorRole}</span>
+                              <span className="text-[#6F7777] text-[10px]">{new Date(m.createdAt).toLocaleString()}</span>
+                            </div>
+                            <div className="mt-1 text-[#0D1717] whitespace-pre-wrap">{m.body}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Add feedback</div>
+                  <div className="relative">
+                    <textarea
+                      value={editFeedback}
+                      onChange={(e) => setEditFeedback(e.target.value)}
+                      placeholder="Didn't like the post? Want some improvements, comment here, we will update the post in 24h"
+                      className={`w-full h-[140px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 pr-10 outline-none focus:ring-0 ${oldStandard.className}`}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Send feedback"
+                      className="absolute bottom-3 right-3 inline-flex items-center justify-center w-[28px] h-[28px] rounded-[6px] border border-[#1DC6A1] text-white bg-[#1DC6A1] hover:bg-[#19b391] cursor-pointer"
+                      onClick={async () => {
+                        if (!selectedRow || !editFeedback.trim() || sendingFeedback) return
+                        try {
+                          setSendingFeedback(true)
+                          const res = await fetch('/api/feedbacks', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ feedback_for: 'post', target_id: selectedRow.id, feedback: editFeedback })
+                          })
+                          if (!res.ok) {
+                            const j = await res.json().catch(() => ({}))
+                            throw new Error(j.error || 'Failed to send feedback')
+                          }
+                          toast.success('Feedback sent')
+                          setEditFeedback('')
+                          // refresh list
+                          await (async () => {
+                            try {
+                              const r = await fetch(`/api/feedbacks?postId=${selectedRow.id}`)
+                              if (r.ok) {
+                                const j = await r.json();
+                                setFeedbackMessages(Array.isArray(j?.messages) ? j.messages : [])
+                              }
+                            } catch {}
+                          })()
+                        } catch (e: any) {
+                          toast.error(e?.message || 'Failed to send feedback')
+                        } finally {
+                          setSendingFeedback(false)
+                        }
+                      }}
+                    >
+                      <ArrowRight className="w-[16px] h-[16px]" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Footer Buttons */}
+              <div className="px-5 pb-5 flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  className="h-[30px] px-3 rounded-[6px] bg-[#1DC6A1] text-white hover:bg-[#19b391] text-[12px] cursor-pointer"
+                  disabled={saving}
+                  onClick={async () => {
+                    if (!selectedRow) return
+                    try {
+                      setSaving(true)
+                      const res = await fetch('/api/admin/posts', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: [selectedRow.id], post_hook: editHook, post_content: editContent }),
+                      });
+                      if (!res.ok) {
+                        toast.error('Failed to save post');
+                        return;
+                      }
+                      setPosts((prev) => prev.map((p) => p.id === selectedRow.id ? { ...p, post_hook: editHook, post_content: editContent } : p))
+                      toast.success('Post saved')
+                      setSelectedRow(null)
+                    } catch (e) {
+                      console.error(e)
+                      toast.error('Failed to save post')
+                    } finally {
+                      setSaving(false)
+                    }
+                  }}
+                >
+                  {saving ? 'Saving…' : 'Save post'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-[30px] px-3 rounded-[6px] border border-[#171717]/20 [border-width:0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[12px] cursor-pointer"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(editContent || '')
+                      toast.success('Copied to clipboard')
+                    } catch {
+                      toast.error('Failed to copy')
+                    }
+                  }}
+                >
+                  Copy
+                </Button>
+                <Button
+                  type="button"
+                  className="h-[30px] px-3 rounded-[6px] bg-[#0077B5] text-white hover:bg-[#005885] text-[12px] cursor-pointer"
+                  disabled={postingToLinkedIn}
+                  onClick={() => setShowLinkedInConfirm(true)}
+                >
+                  {postingToLinkedIn ? 'Posting...' : 'Post directly to LinkedIn'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* LinkedIn Post Confirmation Modal */}
+        {showLinkedInConfirm && (
+          <div
+            className="fixed inset-0 z-60 flex items-center justify-center bg-[#0D1717]/20 backdrop-blur-[6px] p-4"
+            onClick={() => setShowLinkedInConfirm(false)}
+          >
+            <div
+              className="w-full max-w-2xl rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5] rounded-t-[10px]">
+                <h3 className={`${oldStandard.className} text-[16px] leading-[1.3em] text-[#0D1717] font-bold`}>Post to LinkedIn</h3>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer"
+                  aria-label="Close"
+                  onClick={() => setShowLinkedInConfirm(false)}
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="px-5 py-4">
+                <p className="text-[14px] text-[#0D1717] mb-4">
+                  Are you sure you want to post this directly to LinkedIn? This will publish the post immediately.
+                </p>
+                
+                {/* Post Preview - Full Width for Admin */}
+                <div className="mb-4 p-3 bg-[#F6F2EC] rounded-[8px] border border-[#171717]/10">
+                  <p className="text-[12px] text-[#6F7777] mb-2 font-medium">Post Preview:</p>
+                  <div className="text-[13px] text-[#0D1717] leading-[1.4] whitespace-pre-wrap max-h-[120px] overflow-y-auto">
+                    {editContent || selectedRow?.post_content || 'No content'}
+                  </div>
+                  {editHook && (
+                    <div className="mt-2 text-[12px] text-[#6F7777]">
+                      <span className="font-medium">Hook:</span> {editHook}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex gap-2 justify-end">
+                  <Button
                     type="button"
-                    aria-label="Copy"
-                    title="Copy"
-                    className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1]"
+                    variant="ghost"
+                    className="h-[30px] px-3 rounded-[6px] border border-[#171717]/20 [border-width:0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[12px] cursor-pointer"
+                    onClick={() => setShowLinkedInConfirm(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    className="h-[30px] px-3 rounded-[6px] bg-[#0077B5] text-white hover:bg-[#005885] text-[12px] cursor-pointer"
+                    disabled={postingToLinkedIn}
                     onClick={async () => {
+                      if (!selectedRow) return;
+                      
                       try {
-                        await navigator.clipboard.writeText(selectedText || "");
-                        toast.success('Copied to clipboard');
-                      } catch {
-                        toast.error('Failed to copy');
+                        setPostingToLinkedIn(true);
+                        
+                        const response = await fetch('/api/linkedin/post', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({
+                            postId: selectedRow.id,
+                            imageData: null // Admin posts don't have image upload functionality
+                          })
+                        });
+
+                        if (!response.ok) {
+                          const error = await response.json();
+                          throw new Error(error.error || 'Failed to post to LinkedIn');
+                        }
+
+                        toast.success('Posted to LinkedIn successfully!');
+                        setShowLinkedInConfirm(false);
+                        setSelectedRow(null);
+                        
+                        // Refresh posts list to show updated status
+                        const res = await fetch('/api/admin/posts');
+                        if (res.ok) {
+                          const json = await res.json();
+                          setPosts(json.posts || []);
+                        }
+                      } catch (error: any) {
+                        toast.error(error.message || 'Failed to post to LinkedIn');
+                      } finally {
+                        setPostingToLinkedIn(false);
                       }
                     }}
                   >
-                    <Copy className="w-[12px] h-[12px]" />
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1]"
-                    aria-label="Close"
-                    onClick={() => setSelectedText(null)}
-                  >
-                    ✕
-                  </button>
+                    {postingToLinkedIn ? 'Posting...' : 'Post to LinkedIn'}
+                  </Button>
                 </div>
-              </div>
-              <div className="px-5 pb-5 text-[12px] leading-[1.7em] text-[#0D1717] whitespace-pre-wrap break-words">
-                {selectedText}
               </div>
             </div>
           </div>

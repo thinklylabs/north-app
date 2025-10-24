@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import LogoutButton from "@/components/LogoutButton";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Old_Standard_TT } from "next/font/google";
@@ -72,12 +71,11 @@ export default function AdminFeedbacksPage() {
 
   return (
     <div className="min-h-screen w-full bg-[#FCF9F5] text-[#0D1717]">
-      <div className="flex items-center justify-between p-6 md:px-10">
+      <div className="flex items-center p-6 md:px-10">
         <div className="flex items-center gap-3">
           <SidebarTrigger />
           <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Admin  {'>'}  Feedbacks</span>
         </div>
-        <LogoutButton />
       </div>
 
       <div className="px-6 md:px-10 pb-24">

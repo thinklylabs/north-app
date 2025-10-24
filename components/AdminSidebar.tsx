@@ -61,29 +61,9 @@ const adminNavigationItems = [
     icon: Settings,
   },
   {
-    title: "Analytics",
-    url: "/admin/analytics",
-    icon: BarChart3,
-  },
-  {
     title: "Onboarding DB",
     url: "/admin/onboarding-db",
     icon: Database,
-  },
-  {
-    title: "Activity Logs",
-    url: "/admin/activity",
-    icon: Activity,
-  },
-  {
-    title: "Role Management",
-    url: "/admin/roles",
-    icon: UserCheck,
-  },
-  {
-    title: "System Health",
-    url: "/admin/health",
-    icon: AlertTriangle,
   },
 ];
 

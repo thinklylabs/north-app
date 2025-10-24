@@ -24,12 +24,12 @@ export default function OnboardingCard() {
       className="border border-[#0D1717]/30"
     >
       <Card className="p-4 bg-transparent rounded-[5px] border-0">
-        <CardContent className="p-0">
-          <h2 className="text-[12px] font-medium text-[#0D1717] mb-1">
+        <CardContent className="p-1">
+          <h2 className="text-[13px] font-medium text-[#0D1717] mb-2">
             Complete your onboarding
           </h2>
-          <p className="text-[10px] text-[#6F7777] mb-3 leading-[1.3em]">
-            Connect your applications to help us keep the knowledge base updated
+          <p className="text-[9px] text-[#6F7777] mb-6 leading-[1.3em]">
+            Connect your applications to help us keep the knowledge base updated.
           </p>
 
           <ul className="space-y-1.5 mb-3">

@@ -1,4 +1,4 @@
-type SourceType = 'thoughts' | 'slack_messages' | 'substack_feeds' | 'files' | 'notion' | 'tldv' | 'linkedin_profile' | 'manual_rss'
+type SourceType = 'thoughts' | 'slack_messages' | 'substack_feeds' | 'files' | 'notion' | 'tldv' | 'linkedin_profile' | 'manual_rss' | 'tavily_search'
 
 export interface Chunk {
   content: string
@@ -46,6 +46,14 @@ export function chunkBySourceType(
         type: 'manual_rss',
         url: metadata?.url,
         format_used: metadata?.format_used,
+      })
+    case 'tavily_search':
+      return chunkGeneric(content, metadata, {
+        type: 'tavily_search',
+        themes: metadata?.themes,
+        search_query: metadata?.search_query,
+        search_date: metadata?.search_date,
+        results_count: metadata?.results_count,
       })
     case 'thoughts':
     default:

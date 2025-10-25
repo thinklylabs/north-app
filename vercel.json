@@ -1,0 +1,36 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/import-substack",
+      "schedule": "0 6 */2 * *"
+    },
+    {
+      "path": "/api/cron/import-manual-rss",
+      "schedule": "0 7 */2 * *"
+    },
+    {
+      "path": "/api/cron/slack-sync",
+      "schedule": "0 8 */2 * *"
+    },
+    {
+      "path": "/api/cron/notion-sync",
+      "schedule": "0 9 */2 * *"
+    },
+    {
+      "path": "/api/cron/tldv-sync",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/fireflies-sync",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/generate-memory",
+      "schedule": "0 2 * * 0"
+    },
+    {
+      "path": "/api/tavily/weekly-cron",
+      "schedule": "0 1 * * 1"
+    }
+  ]
+}

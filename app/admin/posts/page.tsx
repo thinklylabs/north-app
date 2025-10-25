@@ -788,10 +788,17 @@ export default function AdminPostsPage() {
                 </Button>
                 <Button
                   type="button"
-                  className="h-[30px] px-3 rounded-[6px] bg-[#0077B5] text-white hover:bg-[#005885] text-[12px] cursor-pointer"
+                  className="h-[30px] px-3 rounded-[6px] bg-[#0077B5] text-white hover:bg-[#005885] text-[12px] cursor-pointer flex items-center gap-2"
                   disabled={postingToLinkedIn}
                   onClick={() => setShowLinkedInConfirm(true)}
                 >
+                  {!postingToLinkedIn && (
+                    <img 
+                      src="/linkedin.svg" 
+                      alt="LinkedIn" 
+                      className="w-3 h-3 filter brightness-0 invert"
+                    />
+                  )}
                   {postingToLinkedIn ? 'Posting...' : 'Post directly to LinkedIn'}
                 </Button>
               </div>
@@ -826,17 +833,20 @@ export default function AdminPostsPage() {
                   Are you sure you want to post this directly to LinkedIn? This will publish the post immediately.
                 </p>
                 
-                {/* Post Preview - Full Width for Admin */}
-                <div className="mb-4 p-3 bg-[#F6F2EC] rounded-[8px] border border-[#171717]/10">
-                  <p className="text-[12px] text-[#6F7777] mb-2 font-medium">Post Preview:</p>
-                  <div className="text-[13px] text-[#0D1717] leading-[1.4] whitespace-pre-wrap max-h-[120px] overflow-y-auto">
-                    {editContent || selectedRow?.post_content || 'No content'}
-                  </div>
-                  {editHook && (
-                    <div className="mt-2 text-[12px] text-[#6F7777]">
-                      <span className="font-medium">Hook:</span> {editHook}
+                {/* Preview Content - Centered Layout */}
+                <div className="mb-4 flex justify-center">
+                  {/* Post Preview */}
+                  <div className="w-full max-w-2xl p-4 bg-[#F6F2EC] rounded-[8px] border border-[#171717]/10">
+                    <p className="text-[12px] text-[#6F7777] mb-2 font-medium">Post Preview:</p>
+                    <div className="text-[13px] text-[#0D1717] leading-[1.4] whitespace-pre-wrap max-h-[120px] overflow-y-auto">
+                      {editContent || selectedRow?.post_content || 'No content'}
                     </div>
-                  )}
+                    {editHook && (
+                      <div className="mt-2 text-[12px] text-[#6F7777]">
+                        <span className="font-medium">Hook:</span> {editHook}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="flex gap-2 justify-end">

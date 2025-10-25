@@ -1,0 +1,85 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+
+function getSupabaseAdmin() {
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !serviceKey) throw new Error('Missing Supabase credentials')
+  return createClient(url, serviceKey)
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    console.log('Starting tldv-sync cron job...')
+    const supabaseAdmin = getSupabaseAdmin()
+    
+    // Get all users with TLDV API keys
+    const { data: users, error } = await supabaseAdmin
+      .from('profiles')
+      .select('id, tldv_api_key')
+      .not('tldv_api_key', 'is', null)
+
+    if (error) {
+      console.error('Error fetching users with TLDV keys:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    if (!users || users.length === 0) {
+      console.log('No users with TLDV API keys found')
+      return NextResponse.json({ message: 'No users with TLDV API keys found' })
+    }
+
+    console.log(`Found ${users.length} users with TLDV API keys`)
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    let processed = 0
+    let errors = 0
+    let totalRecordings = 0
+
+    for (const user of users) {
+      try {
+        console.log(`Processing TLDV for user ${user.id}...`)
+        
+        const response = await fetch(`${baseUrl}/api/tldv/import`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+          },
+          body: JSON.stringify({ 
+            user_id: user.id,
+            apiKey: user.tldv_api_key
+          })
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          processed += 1
+          totalRecordings += result.recordingsImported || 0
+          console.log(`Successfully processed TLDV for user ${user.id}, imported ${result.recordingsImported || 0} recordings`)
+        } else {
+          errors += 1
+          const errorText = await response.text()
+          console.error(`Failed to sync TLDV for user ${user.id}:`, errorText)
+        }
+      } catch (error) {
+        errors += 1
+        console.error(`Error syncing TLDV for user ${user.id}:`, error)
+      }
+    }
+
+    console.log(`TLDV-sync cron completed: ${processed} processed, ${errors} errors, ${totalRecordings} recordings imported`)
+
+    return NextResponse.json({
+      success: true,
+      processed,
+      errors,
+      totalRecordings,
+      message: `Processed ${processed} TLDV users, ${errors} errors, ${totalRecordings} recordings imported`
+    })
+
+  } catch (error: any) {
+    console.error('Cron tldv-sync error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}

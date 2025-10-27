@@ -1,0 +1,302 @@
+"use client";
+import { Button } from "@/components/ui/button";
+import { Old_Standard_TT } from "next/font/google";
+import { useState, useRef } from "react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { requireUser } from "@/lib/auth";
+import { toast } from "sonner";
+
+const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
+
+export default function DashboardPage() {
+  const [isRecording, setIsRecording] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingMemory, setIsGeneratingMemory] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  // Function to start/stop recording
+  const handleMicClick = async () => {
+    if (isRecording) {
+      // Stop recording
+      console.log('Stopping recording...');
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+    } else {
+      // Start recording
+      try {
+        console.log('Requesting microphone access...');
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            sampleRate: 44100
+          }
+        });
+        
+        // Try different MIME types for better browser compatibility
+        let mimeType = 'audio/webm';
+        if (!MediaRecorder.isTypeSupported('audio/webm')) {
+          if (MediaRecorder.isTypeSupported('audio/mp4')) {
+            mimeType = 'audio/mp4';
+          } else if (MediaRecorder.isTypeSupported('audio/wav')) {
+            mimeType = 'audio/wav';
+          } else {
+            mimeType = 'audio/webm'; // fallback
+          }
+        }
+        
+        console.log('Using MIME type:', mimeType);
+        const mediaRecorder = new MediaRecorder(stream, { mimeType });
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          console.log('Audio data available, size:', event.data.size);
+          audioChunksRef.current.push(event.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          console.log('Recording stopped, processing audio...');
+          const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+          console.log('Audio blob created:', {
+            size: audioBlob.size,
+            type: audioBlob.type
+          });
+          
+          if (audioBlob.size === 0) {
+            console.error('Audio blob is empty');
+            alert('No audio was recorded. Please try again.');
+            return;
+          }
+          
+          await transcribeAudio(audioBlob);
+          stream.getTracks().forEach((track) => track.stop());
+        };
+
+        mediaRecorder.onerror = (event) => {
+          console.error('MediaRecorder error:', event);
+          alert('Recording error occurred. Please try again.');
+        };
+
+        mediaRecorder.start(1000); // Collect data every second
+        setIsRecording(true);
+        console.log('Recording started');
+      } catch (error) {
+        console.error('Mic access error:', error);
+        alert('Could not access microphone. Check permissions and try again.');
+      }
+    }
+  };
+
+  // Function to send audio to API and update transcript
+  const transcribeAudio = async (audioBlob: Blob) => {
+    console.log('Starting transcription process...');
+    setIsTranscribing(true);
+    
+    const formData = new FormData();
+    formData.append('audio', audioBlob, `recording.${audioBlob.type.split('/')[1] || 'webm'}`);
+
+    try {
+      console.log('Sending audio to API...');
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      console.log('API response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('API error response:', errorData);
+        throw new Error(`Transcription failed: ${errorData.error || 'Unknown error'}`);
+      }
+
+      const result = await response.json();
+      console.log('Transcription result:', result);
+      
+      if (result.text && result.text.trim()) {
+        setTranscript(result.text);
+        console.log('Transcript set successfully:', result.text);
+        // Auto-save the transcribed content
+        try {
+          await saveMessage(result.text);
+        } catch (e) {
+          console.error('Failed to save transcribed message:', e);
+        }
+      } else {
+        console.warn('Empty transcription result');
+        alert('No speech was detected. Please try speaking more clearly.');
+      }
+    } catch (error) {
+      console.error('Transcription error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to transcribe: ${errorMessage}`);
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
+  // Function to save a message to the database via API
+  const saveMessage = async (content: string) => {
+    const trimmed = content.trim();
+    if (!trimmed) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: trimmed })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(err.error || 'Failed to save message');
+      }
+      return await res.json();
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Function to generate long-term memory
+  const generateMemory = async () => {
+    setIsGeneratingMemory(true);
+    toast.info('Generating your memory profile... This may take a minute.');
+    try {
+      const res = await fetch('/api/long-term-memory/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(err.error || 'Failed to generate memory');
+      }
+      const result = await res.json();
+      toast.success('Memory profile generated successfully!');
+      console.log('Memory generated:', result);
+    } catch (error) {
+      console.error('Memory generation error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate memory');
+    } finally {
+      setIsGeneratingMemory(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen w-full bg-[#FCF9F5] text-[#0D1717]">
+      <div className="flex items-center justify-between p-6 md:px-10">
+        <div className="flex items-center gap-3">
+          <SidebarTrigger />
+          <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Users  {'>'}  Home</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            onClick={generateMemory}
+            disabled={isGeneratingMemory}
+            className="h-[27px] rounded-[5px] bg-[#A4D6CB] hover:bg-[#97CFC3] text-[#0D1717] px-3 py-0 text-[10px] cursor-pointer disabled:opacity-50"
+          >
+            {isGeneratingMemory ? 'Generating...' : 'Generate Memory'}
+          </Button>
+        </div>
+      </div>
+
+      <div className="px-6 md:px-10 pb-[140px]">
+
+        <div className="mt-[80px] relative mx-auto max-w-[720px] md:max-w-[840px]">
+          <h2 className={`${oldStandard.className} text-[24px] leading-[1.236em] text-center mb-8 text-[#0D1717]`}>
+            Drop your thoughts here.
+          </h2>
+          <div className="relative">
+            <div className="flex items-center bg-white border border-[#171717]/20 [border-width:0.5px] rounded-full shadow-[0_6px_20px_rgba(13,23,23,0.08)] focus-within:ring-2 focus-within:ring-[#1DC6A1]/20 focus-within:border-[#1DC6A1]/40 transition-[box-shadow,border-color]">
+              <textarea
+                className="flex-1 min-h-[50px] max-h-[200px] bg-transparent text-[#0D1717] text-[12px] leading-[1.3em] pt-6 pb-3 px-6 outline-none resize-none placeholder:text-[#959595]"
+                placeholder="Got an idea or some random inspiration? Ask your north AM to include that in your weekly content plan"
+                value={transcript}
+                onChange={(e) => setTranscript(e.target.value)}
+              />
+              <div className="flex items-center gap-2 px-3 py-2">
+                {/* Microphone Button */}
+                <Button
+                  type="button"
+                  className={`inline-flex items-center justify-center w-8 h-8 rounded-full p-0 cursor-pointer ${
+                    isRecording 
+                      ? 'bg-red-100 text-red-600 hover:bg-red-200' 
+                      : 'bg-transparent hover:bg-gray-100 text-gray-600'
+                  } ${isTranscribing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={handleMicClick}
+                  disabled={isTranscribing}
+                  aria-label={isRecording ? 'Stop recording' : 'Start recording'}
+                >
+                  {isTranscribing ? (
+                    <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <svg 
+                      width="16" 
+                      height="16" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={isRecording ? "text-red-600" : "text-gray-600"}
+                    >
+                      <path 
+                        d="M12 1C10.34 1 9 2.34 9 4V12C9 13.66 10.34 15 12 15C13.66 15 15 13.66 15 12V4C15 2.34 13.66 1 12 1ZM19 10V12C19 15.87 15.87 19 12 19C8.13 19 5 15.87 5 12V10H7V12C7 14.76 9.24 17 12 17C14.76 17 17 14.76 17 12V10H19ZM11 22H13V24H11V22Z" 
+                        fill="currentColor"
+                      />
+                    </svg>
+                  )}
+                </Button>
+                
+                {/* Send Button */}
+                <Button
+                  type="button"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#1DC6A1] hover:bg-[#1AB394] text-white p-0 cursor-pointer disabled:opacity-50"
+                  aria-label="Send"
+                  onClick={async () => {
+                    try {
+                      await saveMessage(transcript);
+                    } catch (e) {
+                      console.error(e);
+                      alert(e instanceof Error ? e.message : 'Failed to save');
+                    }
+                  }}
+                  disabled={isSaving || isTranscribing}
+                >
+                  {isSaving ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <svg 
+                      width="16" 
+                      height="16" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path 
+                        d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" 
+                        fill="currentColor"
+                      />
+                    </svg>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h2 className={`${oldStandard.className} text-[16px] leading-[1.236em] mt-[120px]`}>Metrics</h2>
+
+        <div className="mt-[20px] grid grid-cols-1 md:grid-cols-2 gap-[22px]">
+          <div className="h-[235px] rounded-[10px] bg-[#113434]" />
+          <div className="h-[235px] rounded-[10px] bg-[#113434]" />
+          <div className="h-[235px] rounded-[10px] bg-[#113434]" />
+          <div className="h-[235px] rounded-[10px] bg-[#113434]" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+

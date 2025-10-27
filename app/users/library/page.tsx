@@ -36,6 +36,8 @@ export default function LibraryPage() {
   const [manualRssValidatedUrls, setManualRssValidatedUrls] = useState([false]);
   const [manualRssImporting, setManualRssImporting] = useState(false);
   const [manualRssImportMessage, setManualRssImportMessage] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadTimeoutRef, setUploadTimeoutRef] = useState<NodeJS.Timeout | null>(null);
 
   // Context editor state
   const [contextLoading, setContextLoading] = useState(false);
@@ -43,8 +45,10 @@ export default function LibraryPage() {
   const [icpPainPoints, setIcpPainPoints] = useState("");
   const [onboardingSummary, setOnboardingSummary] = useState("");
   const [longTermMemory, setLongTermMemory] = useState("");
+  const [writingStyle, setWritingStyle] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingMemory, setSavingMemory] = useState(false);
+  const [savingWritingStyle, setSavingWritingStyle] = useState(false);
 
   function openModal() {
     setIsModalOpen(true);
@@ -149,9 +153,10 @@ export default function LibraryPage() {
         const token = session?.access_token;
         if (!token) throw new Error('You must be logged in');
 
-        const [pRes, mRes] = await Promise.all([
+        const [pRes, mRes, wRes] = await Promise.all([
           fetch('/api/profile/context', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('/api/long-term-memory/get', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/linkedin/writing-style', { headers: { Authorization: `Bearer ${token}` } }),
         ])
 
         if (pRes.ok) {
@@ -168,6 +173,16 @@ export default function LibraryPage() {
           setLongTermMemory(m.memory_content || '');
         } else if (mRes.status === 404) {
           setLongTermMemory('');
+        }
+
+        if (wRes.ok) {
+          const wJson = await wRes.json();
+          const w = wJson?.writing_style || {};
+          // Format the writing style as a readable string
+          const formattedStyle = w ? JSON.stringify(w, null, 2) : '';
+          setWritingStyle(formattedStyle);
+        } else if (wRes.status === 404) {
+          setWritingStyle('');
         }
       } catch {
         // silent error
@@ -477,7 +492,17 @@ export default function LibraryPage() {
                   onChange={async (e) => {
                     const inputEl = e.currentTarget as HTMLInputElement
                     const files = Array.from(inputEl.files || [])
-                    if (!files.length) return
+                    
+                    // Clear the timeout since onChange fired (user selected files)
+                    if (uploadTimeoutRef) {
+                      clearTimeout(uploadTimeoutRef);
+                      setUploadTimeoutRef(null);
+                    }
+                    
+                    if (!files.length) {
+                      setIsUploading(false);
+                      return;
+                    }
                     try {
                       const toastId = toast.loading('Uploading...')
                       const supabase = createSupabaseBrowserClient();
@@ -514,6 +539,7 @@ export default function LibraryPage() {
                     } catch (err: any) {
                       toast.error(err?.message || 'Upload failed');
                     } finally {
+                      setIsUploading(false);
                       // no global dismiss; success/error used the same id above
                       if (inputEl) inputEl.value = '';
                     }
@@ -521,10 +547,20 @@ export default function LibraryPage() {
                 />
                 <Button
                   type="button"
-                  onClick={() => document.getElementById('file-input')?.click()}
-                  className="h-[27px] rounded-[5px] bg-[#A4D6CB] hover:bg-[#97CFC3] text-[#0D1717] px-3 py-0 text-[10px] cursor-pointer"
+                  onClick={() => {
+                    setIsUploading(true);
+                    document.getElementById('file-input')?.click();
+                    
+                    // Reset state if user cancels file dialog (no onChange event fires)
+                    const timeout = setTimeout(() => {
+                      setIsUploading(false);
+                    }, 500);
+                    setUploadTimeoutRef(timeout);
+                  }}
+                  disabled={isUploading}
+                  className="h-[27px] rounded-[5px] bg-[#A4D6CB] hover:bg-[#97CFC3] text-[#0D1717] px-3 py-0 text-[10px] cursor-pointer disabled:opacity-60"
                 >
-                  Upload
+                  {isUploading ? 'Opening...' : 'Upload'}
                 </Button>
                 <Button
                   type="button"
@@ -715,7 +751,8 @@ export default function LibraryPage() {
             </div>
           ) : (
             // Context view: editable fields
-            <div className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6 max-w-[1155px]">
+            <div className="mt-6 max-w-[1155px]">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
               <div className="rounded-[10px] bg-white border border-[#0D1717]/10 p-5">
                 <h3 className="text-[16px] text-[#0D1717]">Profile Context</h3>
                 <p className="text-[11px] text-[#0D1717]/70 mt-1">ICP, pain points and onboarding summary</p>
@@ -798,7 +835,7 @@ export default function LibraryPage() {
                     className="w-full h-[400px] rounded-[6px] border border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
                   />
                 </div>
-                <div className="flex justify-end">
+                <div className="flex justify-end mt-4">
                   <Button
                     type="button"
                     onClick={async () => {
@@ -826,6 +863,58 @@ export default function LibraryPage() {
                     className="h-[30px] rounded-[5px] bg-[#1DC6A1] hover:bg-[#19b391] text-white px-3 py-0 text-[10px] cursor-pointer disabled:opacity-60"
                   >
                     {savingMemory ? 'Saving…' : 'Save'}
+                  </Button>
+                </div>
+              </div>
+              </div>
+
+              {/* LinkedIn Writing Style Section - Full Width Horizontal */}
+              <div className="rounded-[10px] bg-white border border-[#0D1717]/10 p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-[16px] text-[#0D1717]">LinkedIn Writing Style</h3>
+                    <p className="text-[11px] text-[#0D1717]/70 mt-1">AI-analyzed writing patterns from your LinkedIn posts.</p>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <textarea
+                    value={writingStyle}
+                    onChange={(e) => setWritingStyle(e.target.value)}
+                    placeholder="Writing style analysis will appear here..."
+                    className="w-full h-[200px] rounded-[6px] border border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
+                  />
+                </div>
+                <div className="flex justify-end mt-4">
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        setSavingWritingStyle(true)
+                        const supabase = createSupabaseBrowserClient();
+                        const { data: { session }, error } = await supabase.auth.getSession();
+                        if (error) throw error;
+                        const token = session?.access_token;
+                        if (!token) throw new Error("You must be logged in");
+                        
+                        // Parse the JSON and save it back
+                        const parsedStyle = JSON.parse(writingStyle);
+                        const res = await fetch('/api/linkedin/writing-style', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                          body: JSON.stringify({ writing_style: parsedStyle })
+                        })
+                        if (!res.ok) throw new Error((await res.json())?.error || 'Failed to save');
+                        toast.success('Writing style saved')
+                      } catch (e: any) {
+                        toast.error(e?.message || 'Failed to save')
+                      } finally {
+                        setSavingWritingStyle(false)
+                      }
+                    }}
+                    disabled={savingWritingStyle}
+                    className="h-[30px] rounded-[5px] bg-[#1DC6A1] hover:bg-[#19b391] text-white px-3 py-0 text-[10px] cursor-pointer disabled:opacity-60"
+                  >
+                    {savingWritingStyle ? 'Saving…' : 'Save'}
                   </Button>
                 </div>
               </div>

@@ -29,7 +29,6 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { UserProfileDropdown } from "@/components/UserProfileDropdown";
-import OnboardingCard from "@/components/OnboardingCard";
 
 // Navigation items
 const navigationItems = [
@@ -116,9 +115,6 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <div className="px-2 mt-4 group-data-[collapsible=icon]:hidden">
-          <OnboardingCard />
-        </div>
       </SidebarContent>
 
       <SidebarFooter className="p-5">

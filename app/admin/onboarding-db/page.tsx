@@ -57,6 +57,7 @@ export default function OnboardingDBPage() {
   const [ltm, setLtm] = useState<LongTermMemory>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [generatingMemory, setGeneratingMemory] = useState(false);
 
   const [summaryDraft, setSummaryDraft] = useState<string>("");
   const [themesDraft, setThemesDraft] = useState<string[]>([]);
@@ -136,6 +137,32 @@ export default function OnboardingDBPage() {
   };
   const removeTheme = (idx: number) => {
     setThemesDraft((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const generateMemory = async () => {
+    if (!selectedUserId) return;
+    try {
+      setGeneratingMemory(true);
+      const resp = await fetch('/api/long-term-memory/generate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ user_id: selectedUserId }),
+      });
+      if (!resp.ok) throw new Error(await resp.text());
+      
+      // Reload the user details to show the newly generated memory
+      const detailsResp = await fetch(`/api/admin/onboarding?userId=${encodeURIComponent(selectedUserId)}`, { cache: "no-store" });
+      if (detailsResp.ok) {
+        const json = await detailsResp.json();
+        setLtm(json.long_term_memory || null);
+      }
+      
+      toast.success('Memory generated successfully');
+    } catch (e) {
+      toast.error('Failed to generate memory');
+    } finally {
+      setGeneratingMemory(false);
+    }
   };
 
   return (
@@ -274,14 +301,32 @@ export default function OnboardingDBPage() {
               </Card>
 
               <Card className="p-4">
-                <h3 className="text-[14px] mb-2">User long-term memory</h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-[14px]">User long-term memory</h3>
+                  <Button 
+                    onClick={generateMemory} 
+                    disabled={generatingMemory || !selectedUserId}
+                    className="h-[24px] px-2 text-[10px]"
+                    size="sm"
+                  >
+                    {generatingMemory ? 'Generating...' : 'Generate Memory'}
+                  </Button>
+                </div>
                 <Separator className="my-2" />
                 {!ltm || !ltm.memory_content ? (
-                  <p className="text-[12px] text-[#6F7777]">No memory generated yet.</p>
+                  <div className="space-y-2">
+                    <p className="text-[12px] text-[#6F7777]">No memory generated yet.</p>
+                    <p className="text-[10px] text-[#6F7777]">Click "Generate Memory" to create a comprehensive memory profile based on the user's content and profile.</p>
+                  </div>
                 ) : (
-                  <pre className="whitespace-pre-wrap text-[11px] max-h-[260px] overflow-auto bg-white p-2 rounded border">
-                    {ltm.memory_content}
-                  </pre>
+                  <div className="space-y-2">
+                    <div className="text-[10px] text-[#6F7777]">
+                      Last updated: {ltm.last_updated ? new Date(ltm.last_updated).toLocaleString() : 'Unknown'}
+                    </div>
+                    <pre className="whitespace-pre-wrap text-[11px] max-h-[260px] overflow-auto bg-white p-2 rounded border">
+                      {ltm.memory_content}
+                    </pre>
+                  </div>
                 )}
               </Card>
             </div>

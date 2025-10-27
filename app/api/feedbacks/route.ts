@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
     const postIdNormalized = targetTypeNormalized === 'post' ? target_id : null
     const ideaIdNormalized = targetTypeNormalized === 'idea' ? target_id : null
 
-    // Determine author_role snapshot; enforce ownership for all callers
+    // Determine author_role snapshot; enforce ownership only for non-admin users
     let authorRole: 'user' | 'admin' = 'user'
     {
       const { data: profile } = await supabase
@@ -188,24 +188,27 @@ export async function POST(req: NextRequest) {
       if (profile?.role === 'admin') authorRole = 'admin'
     }
 
-    if (postIdNormalized) {
-      const { data: postOwner } = await supabase
-        .from('posts')
-        .select('user_id')
-        .eq('id', postIdNormalized)
-        .maybeSingle()
-      if (!postOwner || postOwner.user_id !== user.id) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Only enforce ownership for non-admin users - admins can give feedback on any post/idea
+    if (authorRole !== 'admin') {
+      if (postIdNormalized) {
+        const { data: postOwner } = await supabase
+          .from('posts')
+          .select('user_id')
+          .eq('id', postIdNormalized)
+          .maybeSingle()
+        if (!postOwner || postOwner.user_id !== user.id) {
+          return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
       }
-    }
-    if (ideaIdNormalized) {
-      const { data: ideaOwner } = await supabase
-        .from('ideas')
-        .select('user_id')
-        .eq('id', ideaIdNormalized)
-        .maybeSingle()
-      if (!ideaOwner || ideaOwner.user_id !== user.id) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      if (ideaIdNormalized) {
+        const { data: ideaOwner } = await supabase
+          .from('ideas')
+          .select('user_id')
+          .eq('id', ideaIdNormalized)
+          .maybeSingle()
+        if (!ideaOwner || ideaOwner.user_id !== user.id) {
+          return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
       }
     }
 

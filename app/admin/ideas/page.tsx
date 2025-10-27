@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Copy, Trash2, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -271,7 +272,13 @@ export default function AdminIdeasPage() {
       if (!selected) return;
       try {
         setLoadingThread(true);
-        const res = await fetch(`/api/feedbacks?ideaId=${selected.id}`);
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        
+        const res = await fetch(`/api/feedbacks?ideaId=${selected.id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined
+        });
         if (!res.ok) {
           setThreadMessages([]);
           return;
@@ -721,10 +728,15 @@ export default function AdminIdeasPage() {
                           if (!selected) return;
                           try {
                             setSendingIdeaFeedback(true);
+                            const supabase = createClient();
+                            const { data: { session } } = await supabase.auth.getSession();
+                            const token = session?.access_token;
+                            
                             const res = await fetch('/api/feedbacks', {
                               method: 'POST',
                               headers: {
                                 'Content-Type': 'application/json',
+                                ...(token ? { Authorization: `Bearer ${token}` } : {})
                               },
                               body: JSON.stringify({
                                 feedback_for: 'idea',
@@ -740,7 +752,13 @@ export default function AdminIdeasPage() {
                             setNewIdeaFeedback('');
                             // refresh messages
                             try {
-                              const r = await fetch(`/api/feedbacks?ideaId=${selected.id}`);
+                              const supabase = createClient();
+                              const { data: { session } } = await supabase.auth.getSession();
+                              const token = session?.access_token;
+                              
+                              const r = await fetch(`/api/feedbacks?ideaId=${selected.id}`, {
+                                headers: token ? { Authorization: `Bearer ${token}` } : undefined
+                              });
                               if (r.ok) {
                                 const j = await r.json();
                                 setThreadMessages(Array.isArray(j?.messages) ? j.messages : []);

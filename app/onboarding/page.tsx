@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 import { Old_Standard_TT } from "next/font/google";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { upsertCurrentUserProfile } from "@/lib/profile";
+import { upsertCurrentUserProfile, getUserProfile } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/client";
 import { Toaster, toast } from "sonner";
+import WritingStyleModal from "@/components/WritingStyleModal";
  
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
@@ -23,9 +24,25 @@ export default function Onboarding() {
   const [step, setStep] = useState(1);
   const [icp, setIcp] = useState("");
   const [icpPainPoints, setIcpPainPoints] = useState("");
+  const [showWritingStyleModal, setShowWritingStyleModal] = useState(false);
+  const [checkingPostCount, setCheckingPostCount] = useState(false);
   
   const supabase = createClient();
   const router = useRouter();
+
+  // Client-side guard: if already onboarded, redirect away from onboarding
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getUserProfile();
+        const p: any = res?.profile;
+        const onboarded = !!(p?.website_url && p?.company_name && p?.icp && p?.icp_pain_points);
+        if (onboarded) {
+          router.replace("/users/dashboard");
+        }
+      } catch {}
+    })();
+  }, [router]);
 
   useEffect(() => {
     if (profileUpserted) return;
@@ -61,6 +78,33 @@ export default function Onboarding() {
       window.history.replaceState({}, "", url.pathname + (url.search ? `?${url.searchParams.toString()}` : ""));
     }
   }, []);
+
+  // Function to check post count and show writing style modal if needed
+  const checkPostCountAndShowModal = async () => {
+    setCheckingPostCount(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/linkedin/posts-count", {
+        headers: {
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.postCount < 7 && !data.hasWritingStyle) {
+          setShowWritingStyleModal(true);
+          return false; // Don't proceed to next step yet
+        }
+      }
+      return true; // Proceed to next step
+    } catch (error) {
+      console.error("Error checking post count:", error);
+      return true; // Proceed anyway on error
+    } finally {
+      setCheckingPostCount(false);
+    }
+  };
 
   return (
     <main className="min-h-screen w-full bg-[#FCF9F5] text-[#0D1717] flex">
@@ -135,13 +179,18 @@ export default function Onboarding() {
             <div className="mt-[60px] w-[326px] flex gap-2">
               <Button
                 type="button"
-                disabled={submitting}
+                disabled={submitting || checkingPostCount}
                 onClick={async () => {
                   setShowToast(false);
                   if (!websiteUrl || !companyName) {
                     setShowToast(true);
                     return;
                   }
+                  
+                  // Check post count first
+                  const shouldProceed = await checkPostCountAndShowModal();
+                  if (!shouldProceed) return;
+                  
                   setSubmitting(true);
                   try {
                     const { data: { session } } = await supabase.auth.getSession();
@@ -182,7 +231,9 @@ export default function Onboarding() {
                 }}
                 className="w-full rounded-[5px] bg-[#1DC6A1] hover:bg-[#1DC6A1] px-[106px] py-[6px] h-auto disabled:opacity-60 cursor-pointer"
               >
-                <span className="font-sans text-[12px] leading-[1.3em] text-white">{submitting ? "Saving..." : "Continue"}</span>
+                <span className="font-sans text-[12px] leading-[1.3em] text-white">
+                  {checkingPostCount ? "Checking..." : submitting ? "Saving..." : "Continue"}
+                </span>
               </Button>
             </div>
           </>
@@ -248,6 +299,15 @@ export default function Onboarding() {
         )}
       </div>
       <div className="hidden md:block w-[624px] min-h-screen bg-[url('/signup-art.png')] bg-cover bg-center ml-auto rotate-180" />
+
+      <WritingStyleModal
+        isOpen={showWritingStyleModal}
+        onClose={() => setShowWritingStyleModal(false)}
+        onSuccess={() => {
+          // After successful style save, proceed to next step
+          setStep(2);
+        }}
+      />
 
       <Toaster position="bottom-right" />
     </main>

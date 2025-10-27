@@ -189,23 +189,28 @@ export async function POST(req: NextRequest) {
           continue
         }
 
-        try {
-          const { processRawDocument } = await import('@/lib/processRaw')
-          await processRawDocument(raw.id)
-        } catch (e) {
-          console.error('Failed processing uploaded file', e)
-        }
-
-        // Generate idea for this raw document (best-effort)
-        try {
-          const { generateIdeaForRawId } = await import('@/lib/ideas')
-          await generateIdeaForRawId(raw.id)
-        } catch (e) {
-          console.error('Failed generating idea for uploaded file', e)
-        }
-
+        // Return success immediately, process in background
         insertedIds.push(raw.id)
-        results.push({ name, ok: true, message: `parsed ${cleaned.length} chars` })
+        results.push({ name, ok: true, message: `uploaded successfully` })
+
+        // Fire-and-forget background processing
+        Promise.resolve().then(async () => {
+          try {
+            const { processRawDocument } = await import('@/lib/processRaw')
+            await processRawDocument(raw.id)
+          } catch (e) {
+            console.error('Failed processing uploaded file', e)
+          }
+
+          try {
+            const { generateIdeaForRawId } = await import('@/lib/ideas')
+            await generateIdeaForRawId(raw.id)
+          } catch (e) {
+            console.error('Failed generating idea for uploaded file', e)
+          }
+        }).catch(e => {
+          console.error('Background processing error:', e)
+        })
       } catch (e: any) {
         results.push({ name, ok: false, message: e?.message || 'Failed to process file' })
       }

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { Copy, Trash2, ArrowUpDown, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -276,7 +277,13 @@ export default function AdminPostsPage() {
       if (!selectedRow) return;
       try {
         setLoadingFeedback(true);
-        const res = await fetch(`/api/feedbacks?postId=${selectedRow.id}`);
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        
+        const res = await fetch(`/api/feedbacks?postId=${selectedRow.id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined
+        });
         if (!res.ok) {
           setFeedbackMessages([]);
           return;
@@ -703,10 +710,15 @@ export default function AdminPostsPage() {
                         if (!selectedRow || !editFeedback.trim() || sendingFeedback) return
                         try {
                           setSendingFeedback(true)
+                          const supabase = createClient();
+                          const { data: { session } } = await supabase.auth.getSession();
+                          const token = session?.access_token;
+                          
                           const res = await fetch('/api/feedbacks', {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',
+                              ...(token ? { Authorization: `Bearer ${token}` } : {})
                             },
                             body: JSON.stringify({ feedback_for: 'post', target_id: selectedRow.id, feedback: editFeedback })
                           })
@@ -719,7 +731,13 @@ export default function AdminPostsPage() {
                           // refresh list
                           await (async () => {
                             try {
-                              const r = await fetch(`/api/feedbacks?postId=${selectedRow.id}`)
+                              const supabase = createClient();
+                              const { data: { session } } = await supabase.auth.getSession();
+                              const token = session?.access_token;
+                              
+                              const r = await fetch(`/api/feedbacks?postId=${selectedRow.id}`, {
+                                headers: token ? { Authorization: `Bearer ${token}` } : undefined
+                              })
                               if (r.ok) {
                                 const j = await r.json();
                                 setFeedbackMessages(Array.isArray(j?.messages) ? j.messages : [])

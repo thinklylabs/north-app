@@ -30,6 +30,22 @@ export async function GET(request: NextRequest) {
     if (error) {
       return NextResponse.redirect(new URL('/signin?error=oauth_callback', requestUrl))
     }
+
+    // Ensure a basic profile exists so middleware doesn't block onboarding
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      // Best-effort upsert; ignore errors to avoid blocking login flow
+      await supabase
+        .from('profiles')
+        .upsert(
+          {
+            id: user.id,
+            email: user.email,
+            role: 'user',
+          },
+          { onConflict: 'id' }
+        )
+    }
   }
 
   return response

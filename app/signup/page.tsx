@@ -103,13 +103,13 @@ export default function Signup() {
 
             <div className="w-[326px] flex flex-col">
               <p className="font-sans text-[12px] leading-[1.3em] text-[#0D1717] mb-[4px]">First name</p>
-              <Input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] [border-width:0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
+              <Input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border-[#0D1717] border-[0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
 
               <p className="font-sans text-[12px] leading-[1.3em] text-[#0D1717] mt-[12px] mb-[4px]">Last name</p>
-              <Input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] [border-width:0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
+              <Input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border-[#0D1717] border-[0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
 
               <p className="font-sans text-[12px] leading-[1.3em] text-[#0D1717] mt-[12px] mb-[4px]">Email</p>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] [border-width:0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border-[#0D1717] border-[0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
 
               <p className="font-sans text-[12px] leading-[1.3em] text-[#0D1717] mt-[12px] mb-[4px]">Password</p>
               <div className="relative">
@@ -118,7 +118,7 @@ export default function Signup() {
                   value={password} 
                   onChange={(e) => setPassword(e.target.value)} 
                   placeholder="set a strong password" 
-                  className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] [border-width:0.5px] px-3 pr-10 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" 
+                  className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border-[#0D1717] border-[0.5px] px-3 pr-10 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" 
                 />
                 <button
                   type="button"

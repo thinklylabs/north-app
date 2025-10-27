@@ -86,7 +86,7 @@ export default function WaitingPage() {
             We're setting up your personalized experience based on your profile.
           </p>
           
-          <div className="bg-white border border-[#0D1717]/10 rounded-lg p-6 mb-8">
+          <div className="bg-white border-[#0D1717]/10 rounded-lg p-6 mb-8">
             <p className="text-xs font-semibold text-[#0D1717] mb-3 text-left">What happens next:</p>
             <ul className="text-xs text-[#666] text-left space-y-2">
               <li className="flex items-start gap-2">

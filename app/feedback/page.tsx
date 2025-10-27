@@ -133,7 +133,7 @@ export default function FeedbackPage() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Rating Questions */}
-          <div className="bg-white rounded-lg p-6 border border-[#171717]/10 shadow-sm">
+          <div className="bg-white rounded-lg p-6 border-[#171717]/10 shadow-sm">
             <h2 className={`${oldStandard.className} text-xl font-semibold text-[#0D1717] mb-6`}>
               Rate Your Experience
             </h2>
@@ -166,7 +166,7 @@ export default function FeedbackPage() {
           </div>
 
           {/* Open-ended Questions */}
-          <div className="bg-white rounded-lg p-6 border border-[#171717]/10 shadow-sm">
+          <div className="bg-white rounded-lg p-6 border-[#171717]/10 shadow-sm">
             <h2 className={`${oldStandard.className} text-xl font-semibold text-[#0D1717] mb-6`}>
               Tell Us More
             </h2>
@@ -207,7 +207,7 @@ export default function FeedbackPage() {
                   value={formData.suggestions}
                   onChange={(e) => handleInputChange('suggestions', e.target.value)}
                   placeholder="Share your ideas for new features or improvements..."
-                  className="mt-2 w-full h-24 px-3 py-2 border border-[#171717]/20 rounded-md bg-[#FCF9F5] resize-none focus:outline-none focus:ring-2 focus:ring-[#1DC6A1] focus:border-transparent"
+                  className="mt-2 w-full h-24 px-3 py-2 border-[#171717]/20 rounded-md bg-[#FCF9F5] resize-none focus:outline-none focus:ring-2 focus:ring-[#1DC6A1] focus:border-transparent"
                 />
               </div>
 
@@ -220,7 +220,7 @@ export default function FeedbackPage() {
                   value={formData.additionalComments}
                   onChange={(e) => handleInputChange('additionalComments', e.target.value)}
                   placeholder="Anything else you'd like us to know?"
-                  className="mt-2 w-full h-24 px-3 py-2 border border-[#171717]/20 rounded-md bg-[#FCF9F5] resize-none focus:outline-none focus:ring-2 focus:ring-[#1DC6A1] focus:border-transparent"
+                  className="mt-2 w-full h-24 px-3 py-2 border-[#171717]/20 rounded-md bg-[#FCF9F5] resize-none focus:outline-none focus:ring-2 focus:ring-[#1DC6A1] focus:border-transparent"
                 />
               </div>
             </div>

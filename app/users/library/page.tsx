@@ -461,7 +461,7 @@ export default function LibraryPage() {
                 type="button"
                 onClick={() => setActiveTab("context")}
                 variant="outline"
-                className={`h-[27px] rounded-[5px] px-3 py-0 text-[10px] cursor-pointer border [border-width:0.5px] ${
+                className={`h-[27px] rounded-[5px] px-3 py-0 text-[10px] cursor-pointer border-[0.5px] ${
                   activeTab === "context"
                     ? "bg-[#FCF9F5] border-[#171717] text-[#0D1717]"
                     : "bg-transparent border-[#d1d5db] text-[#0D1717]/70"
@@ -737,7 +737,7 @@ export default function LibraryPage() {
                     key={i}
                     className="h-[72px] rounded-[10px] bg-[#101617] flex items-center justify-between px-4"
                   >
-                    <div className="w-[18px] h-[18px] rounded-[3px] border border-[#7FA9A1]/60 [border-width:0.5px]" />
+                    <div className="w-[18px] h-[18px] rounded-[3px] border-[#7FA9A1]/60 border-[0.5px]" />
                     <Button
                       type="button"
                       onClick={openModal}
@@ -753,7 +753,7 @@ export default function LibraryPage() {
             // Context view: editable fields
             <div className="mt-6 max-w-[1155px]">
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-              <div className="rounded-[10px] bg-white border border-[#0D1717]/10 p-5">
+              <div className="rounded-[10px] bg-white border-[#0D1717]/10 p-5">
                 <h3 className="text-[16px] text-[#0D1717]">Profile Context</h3>
                 <p className="text-[11px] text-[#0D1717]/70 mt-1">ICP, pain points and onboarding summary</p>
                 <div className="mt-4 space-y-4">
@@ -764,7 +764,7 @@ export default function LibraryPage() {
                       value={icp}
                       onChange={(e) => setIcp(e.target.value)}
                       placeholder="Describe your ideal customer profile..."
-                      className="w-full h-[100px] rounded-[6px] border border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
+                      className="w-full h-[100px] rounded-[6px] border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
                     />
                   </div>
                   <div>
@@ -774,7 +774,7 @@ export default function LibraryPage() {
                       value={icpPainPoints}
                       onChange={(e) => setIcpPainPoints(e.target.value)}
                       placeholder="What are their biggest pains?"
-                      className="w-full h-[100px] rounded-[6px] border border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
+                      className="w-full h-[100px] rounded-[6px] border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
                     />
                   </div>
                   <div>
@@ -784,7 +784,7 @@ export default function LibraryPage() {
                       value={onboardingSummary}
                       onChange={(e) => setOnboardingSummary(e.target.value)}
                       placeholder="Brief summary captured during onboarding..."
-                      className="w-full h-[120px] rounded-[6px] border border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
+                      className="w-full h-[120px] rounded-[6px] border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
                     />
                   </div>
                   <div className="flex justify-end">
@@ -820,7 +820,7 @@ export default function LibraryPage() {
                 </div>
               </div>
 
-              <div className="rounded-[10px] bg-white border border-[#0D1717]/10 p-5 flex flex-col h-full">
+              <div className="rounded-[10px] bg-white border-[#0D1717]/10 p-5 flex flex-col h-full">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-[16px] text-[#0D1717]">Long-term Memory</h3>
@@ -832,7 +832,7 @@ export default function LibraryPage() {
                     value={longTermMemory}
                     onChange={(e) => setLongTermMemory(e.target.value)}
                     placeholder="Memory summary..."
-                    className="w-full h-[400px] rounded-[6px] border border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
+                    className="w-full h-[400px] rounded-[6px] border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
                   />
                 </div>
                 <div className="flex justify-end mt-4">
@@ -869,7 +869,7 @@ export default function LibraryPage() {
               </div>
 
               {/* LinkedIn Writing Style Section - Full Width Horizontal */}
-              <div className="rounded-[10px] bg-white border border-[#0D1717]/10 p-5">
+              <div className="rounded-[10px] bg-white border-[#0D1717]/10 p-5">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-[16px] text-[#0D1717]">LinkedIn Writing Style</h3>
@@ -881,7 +881,7 @@ export default function LibraryPage() {
                     value={writingStyle}
                     onChange={(e) => setWritingStyle(e.target.value)}
                     placeholder="Writing style analysis will appear here..."
-                    className="w-full h-[200px] rounded-[6px] border border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
+                    className="w-full h-[200px] rounded-[6px] border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
                   />
                 </div>
                 <div className="flex justify-end mt-4">
@@ -932,7 +932,7 @@ export default function LibraryPage() {
                 className="absolute inset-0 bg-black/20 backdrop-blur-[6px]"
                 onClick={closeModal}
               />
-              <div className="relative z-10 w-[640px] max-w-[92vw] rounded-[8px] bg-white shadow-xl border border-[#0D1717]/10">
+              <div className="relative z-10 w-[640px] max-w-[92vw] rounded-[8px] bg-white shadow-xl border-[#0D1717]/10">
                 <div className="p-6">
                   <div className="flex items-start justify-between">
                     <div>
@@ -955,7 +955,7 @@ export default function LibraryPage() {
                       placeholder="API key"
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
-                      className="h-[36px] w-full rounded-[6px] border border-[#0D1717]/15 bg-white px-3 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30"
+                      className="h-[36px] w-full rounded-[6px] border-[#0D1717]/15 bg-white px-3 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30"
                     />
                   </div>
 
@@ -1011,7 +1011,7 @@ export default function LibraryPage() {
                 className="absolute inset-0 bg-black/20 backdrop-blur-[6px]"
                 onClick={closeAddContext}
               />
-              <div className="relative z-10 w-[720px] max-w-[92vw] rounded-[8px] bg-white shadow-xl border border-[#0D1717]/10">
+              <div className="relative z-10 w-[720px] max-w-[92vw] rounded-[8px] bg-white shadow-xl border-[#0D1717]/10">
                 <div className="p-6">
                   <div className="flex items-start justify-between">
                     <div>
@@ -1034,7 +1034,7 @@ export default function LibraryPage() {
                   <div className="mt-5">
                     <textarea
                       placeholder="Information..."
-                      className="w-full h-[200px] rounded-[6px] border border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
+                      className="w-full h-[200px] rounded-[6px] border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
                     />
                   </div>
 
@@ -1059,7 +1059,7 @@ export default function LibraryPage() {
                 className="absolute inset-0 bg-black/20 backdrop-blur-[6px]"
                 onClick={closeSubstackModal}
               />
-              <div className="relative z-10 w-[640px] max-w-[92vw] rounded-[8px] bg-white shadow-xl border border-[#0D1717]/10">
+              <div className="relative z-10 w-[640px] max-w-[92vw] rounded-[8px] bg-white shadow-xl border-[#0D1717]/10">
                 <div className="p-6">
                   <div className="flex items-start justify-between">
                     <div>
@@ -1087,7 +1087,7 @@ export default function LibraryPage() {
                           value={url}
                           onChange={(e) => handleSubstackUrlChange(index, e.target.value)}
                           placeholder="https://farza.substack.com/"
-                          className="flex-1 h-[30px] rounded-[5px] border border-[#0D1717]/15 bg-[#F4F4F4] px-3 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30"
+                          className="flex-1 h-[30px] rounded-[5px] border-[#0D1717]/15 bg-[#F4F4F4] px-3 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30"
                         />
                         <div className={`w-[30px] h-[30px] rounded-[5px] flex items-center justify-center ${
                           validatedUrls[index] ? 'bg-[#1DC6A1]' : 'bg-[#7FA9A1]'
@@ -1110,7 +1110,7 @@ export default function LibraryPage() {
                         </div>
                         <button
                           type="button"
-                          className="h-[30px] px-2 rounded-[5px] bg-[#F4F4F4] text-[#0D1717] text-[11px] cursor-pointer border border-[#0D1717]/10 hover:bg-[#e9e9e9]"
+                          className="h-[30px] px-2 rounded-[5px] bg-[#F4F4F4] text-[#0D1717] text-[11px] cursor-pointer border-[#0D1717]/10 hover:bg-[#e9e9e9]"
                           onClick={() => removeSubstackField(index)}
                         >
                           Remove
@@ -1129,7 +1129,7 @@ export default function LibraryPage() {
                     </button>
                     <button
                       type="button"
-                      className="h-[28px] px-3 rounded-[6px] bg-[#F4F4F4] text-[#0D1717] text-[11px] cursor-pointer border border-[#0D1717]/10 hover:bg-[#e9e9e9]"
+                      className="h-[28px] px-3 rounded-[6px] bg-[#F4F4F4] text-[#0D1717] text-[11px] cursor-pointer border-[#0D1717]/10 hover:bg-[#e9e9e9]"
                       onClick={() => removeSubstackField()}
                     >
                       Remove Last
@@ -1161,7 +1161,7 @@ export default function LibraryPage() {
                 className="absolute inset-0 bg-black/20 backdrop-blur-[6px]"
                 onClick={() => setTldvModalOpen(false)}
               />
-              <div className="relative z-10 w-[640px] max-w-[92vw] rounded-[8px] bg-white shadow-xl border border-[#0D1717]/10">
+              <div className="relative z-10 w-[640px] max-w-[92vw] rounded-[8px] bg-white shadow-xl border-[#0D1717]/10">
                 <div className="p-6">
                   <div className="flex items-start justify-between">
                     <div>
@@ -1184,7 +1184,7 @@ export default function LibraryPage() {
                       placeholder="API key"
                       value={tldvApiKey}
                       onChange={(e) => setTldvApiKey(e.target.value)}
-                      className="h-[36px] w-full rounded-[6px] border border-[#0D1717]/15 bg-white px-3 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30"
+                      className="h-[36px] w-full rounded-[6px] border-[#0D1717]/15 bg-white px-3 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30"
                     />
                   </div>
 
@@ -1200,7 +1200,7 @@ export default function LibraryPage() {
                   </div>
 
                   {tldvImportMessage && (
-                    <div className="mt-4 p-3 rounded-[6px] bg-[#f0f9ff] border border-[#0ea5e9]/20">
+                    <div className="mt-4 p-3 rounded-[6px] bg-[#f0f9ff] border-[#0ea5e9]/20">
                       <p className="text-[12px] text-[#0369a1]">{tldvImportMessage}</p>
                     </div>
                   )}
@@ -1216,7 +1216,7 @@ export default function LibraryPage() {
                 className="absolute inset-0 bg-black/20 backdrop-blur-[6px]"
                 onClick={closeManualRssModal}
               />
-              <div className="relative z-10 w-[640px] max-w-[92vw] rounded-[8px] bg-white shadow-xl border border-[#0D1717]/10">
+              <div className="relative z-10 w-[640px] max-w-[92vw] rounded-[8px] bg-white shadow-xl border-[#0D1717]/10">
                 <div className="p-6">
                   <div className="flex items-start justify-between">
                     <div>
@@ -1244,7 +1244,7 @@ export default function LibraryPage() {
                           value={url}
                           onChange={(e) => handleManualRssUrlChange(index, e.target.value)}
                           placeholder="https://medium.com/@username/article"
-                          className="flex-1 h-[30px] rounded-[5px] border border-[#0D1717]/15 bg-[#F4F4F4] px-3 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30"
+                          className="flex-1 h-[30px] rounded-[5px] border-[#0D1717]/15 bg-[#F4F4F4] px-3 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30"
                         />
                         <div className={`w-[30px] h-[30px] rounded-[5px] flex items-center justify-center ${
                           manualRssValidatedUrls[index] ? 'bg-[#1DC6A1]' : 'bg-[#7FA9A1]'
@@ -1267,7 +1267,7 @@ export default function LibraryPage() {
                         </div>
                         <button
                           type="button"
-                          className="h-[30px] px-2 rounded-[5px] bg-[#F4F4F4] text-[#0D1717] text-[11px] cursor-pointer border border-[#0D1717]/10 hover:bg-[#e9e9e9]"
+                          className="h-[30px] px-2 rounded-[5px] bg-[#F4F4F4] text-[#0D1717] text-[11px] cursor-pointer border-[#0D1717]/10 hover:bg-[#e9e9e9]"
                           onClick={() => removeManualRssField(index)}
                         >
                           Remove
@@ -1286,7 +1286,7 @@ export default function LibraryPage() {
                     </button>
                     <button
                       type="button"
-                      className="h-[28px] px-3 rounded-[6px] bg-[#F4F4F4] text-[#0D1717] text-[11px] cursor-pointer border border-[#0D1717]/10 hover:bg-[#e9e9e9]"
+                      className="h-[28px] px-3 rounded-[6px] bg-[#F4F4F4] text-[#0D1717] text-[11px] cursor-pointer border-[#0D1717]/10 hover:bg-[#e9e9e9]"
                       onClick={() => removeManualRssField()}
                     >
                       Remove Last

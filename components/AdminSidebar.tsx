@@ -148,7 +148,7 @@ export function AdminSidebar() {
 
         {/* Admin Stats Card
         <div className="px-3 py-4">
-          <div className="w-full h-[200px] rounded-[5px] border border-[#0D1717]/100 [border-width:0.2px] shadow-[0_4px_10px_rgba(13,23,23,0.2)] p-[18px_12px] flex flex-col gap-[6px] bg-[#FCF9F5] relative group-data-[collapsible=icon]:hidden">
+          <div className="w-full h-[200px] rounded-[5px] border-[#0D1717]/100 border-[0.2px] shadow-[0_4px_10px_rgba(13,23,23,0.2)] p-[18px_12px] flex flex-col gap-[6px] bg-[#FCF9F5] relative group-data-[collapsible=icon]:hidden">
             <h2 className="text-center text-[14px] py-2 leading-[1.236em]">System Overview</h2>
             <p className="text-[10px] leading-[1.3em] w-[188px]">
               Monitor system performance and user activity
@@ -162,7 +162,7 @@ export function AdminSidebar() {
               "Database Size: 2.4GB",
             ].map((stat, idx) => (
               <div key={idx} className="flex items-center gap-[7px] w-[163px] h-[13px]">
-                <div className="w-[11px] h-[11px] rounded-full border border-[#6F7777]/100 [border-width:0.4px]" />
+                <div className="w-[11px] h-[11px] rounded-full border-[#6F7777]/100 border-[0.4px]" />
                 <span className="text-[10px] leading-[1.3em] text-[#6F7777] w-[145px]">
                   {stat}
                 </span>

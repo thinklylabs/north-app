@@ -15,6 +15,17 @@ const ADMIN_PATHS = [
   "/admin/health"
 ];
 
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <AdminSidebar />
+      <main className="flex-1">
+        {children}
+      </main>
+    </>
+  );
+}
+
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   
@@ -23,10 +34,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   if (isAdminPath) {
     return (
       <SidebarProvider>
-        <AdminSidebar />
-        <main className="flex-1">
+        <AdminLayoutContent>
           {children}
-        </main>
+        </AdminLayoutContent>
       </SidebarProvider>
     );
   }

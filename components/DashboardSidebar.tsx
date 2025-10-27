@@ -16,7 +16,7 @@ export default function DashboardSidebar() {
             type="button"
             variant="outline"
             onClick={() => setCollapsed(false)}
-            className="inline-flex items-center justify-center w-[27px] h-[27px] rounded-[5px] bg-[#FCF9F5] border border-[#171717] [border-width:0.5px] p-0"
+            className="inline-flex items-center justify-center w-[27px] h-[27px] rounded-[5px] bg-[#FCF9F5] border-[#171717] border-[0.5px] p-0"
             aria-label="Expand sidebar"
           >
             <span className="text-[12px] leading-none text-[#171717]">&gt;</span>
@@ -36,7 +36,7 @@ export default function DashboardSidebar() {
               type="button"
               variant="outline"
               onClick={() => setCollapsed(true)}
-              className="inline-flex items-center justify-center w-[27px] h-[27px] rounded-[5px] bg-[#FCF9F5] border border-[#171717] [border-width:0.5px] p-0"
+              className="inline-flex items-center justify-center w-[27px] h-[27px] rounded-[5px] bg-[#FCF9F5] border-[#171717] border-[0.5px] p-0"
               aria-label="Collapse sidebar"
             >
               <span className="text-[12px] leading-none text-[#171717]">&lt;</span>

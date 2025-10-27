@@ -184,7 +184,7 @@ export default function OnboardingDBPage() {
             <div className="md:col-span-2">
               <Label className="text-[12px]">Select user</Label>
               <select
-                className="h-[28px] px-2 rounded-[5px] border border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1] w-full"
+                className="h-[28px] px-2 rounded-[5px] border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1] w-full"
                 value={selectedUserId}
                 onChange={(e) => setSelectedUserId(e.target.value)}
                 disabled={loadingUsers}
@@ -216,7 +216,7 @@ export default function OnboardingDBPage() {
               <div className="space-y-2">
                 <Label className="text-[12px]">Summary (editable)</Label>
                 <textarea
-                  className="w-full min-h-[160px] text-[12px] border border-[#171717]/20 rounded p-2 bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1]"
+                  className="w-full min-h-[160px] text-[12px] border-[#171717]/20 rounded p-2 bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1]"
                   value={summaryDraft}
                   onChange={(e) => setSummaryDraft(e.target.value)}
                   placeholder="Add or edit onboarding call summary..."
@@ -241,7 +241,7 @@ export default function OnboardingDBPage() {
                     {themesDraft.map((t, idx) => (
                       <div key={idx} className="flex items-center gap-2">
                         <input
-                          className="h-[28px] px-2 rounded-[5px] border border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1] flex-1"
+                          className="h-[28px] px-2 rounded-[5px] border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1] flex-1"
                           value={t}
                           onChange={(e) => updateTheme(idx, e.target.value)}
                           placeholder={`Theme ${idx + 1}`}

@@ -16,6 +16,13 @@ type RowItem = {
   created_at: string;
   feedback_count: number;
   last_feedback_at: string;
+  user: {
+    display_name: string;
+    email: string;
+    first_name?: string;
+    last_name?: string;
+    company_name?: string;
+  };
 };
 
 export default function AdminFeedbacksPage() {
@@ -94,11 +101,12 @@ export default function AdminFeedbacksPage() {
             <table className="w-full table-fixed">
               <thead className="bg-[#F6F2EC]">
                 <tr>
-                  <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[10%]">Type</th>
-                  <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[40%]">Title</th>
-                  <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[15%]">Status</th>
-                  <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[10%]">Feedbacks</th>
-                  <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[25%]">Last feedback</th>
+                  <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[8%]">Type</th>
+                  <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[30%]">Title</th>
+                  <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[20%]">User</th>
+                  <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[12%]">Status</th>
+                  <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[8%]">Feedbacks</th>
+                  <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[22%]">Last feedback</th>
                 </tr>
               </thead>
               <tbody>
@@ -106,6 +114,15 @@ export default function AdminFeedbacksPage() {
                   <tr key={`${r.type}-${r.id}`} className="border-t border-[#171717]/10 hover:bg-[#F9F6F1] cursor-pointer" onClick={() => setSelected(r)}>
                     <td className="px-4 py-3 align-top text-[12px]">{r.type}</td>
                     <td className="px-4 py-3 align-top text-[12px] text-[#0D1717] truncate" title={r.title}>{r.title}</td>
+                    <td className="px-4 py-3 align-top text-[12px]">
+                      <div className="flex flex-col">
+                        <span className="text-[#0D1717] font-medium">{r.user.display_name}</span>
+                        <span className="text-[#6F7777] text-[10px]">{r.user.email}</span>
+                        {r.user.company_name && (
+                          <span className="text-[#6F7777] text-[10px]">{r.user.company_name}</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 align-top text-[12px]">{r.status}</td>
                     <td className="px-4 py-3 align-top text-[12px]">{r.feedback_count}</td>
                     <td className="px-4 py-3 align-top text-[12px]">{new Date(r.last_feedback_at).toLocaleString()}</td>
@@ -129,6 +146,14 @@ export default function AdminFeedbacksPage() {
                   <div className="text-[12px] text-[#0D1717] mt-1">{selected.title}</div>
                   <div className="mt-3 text-[12px] text-[#0D1717]">Status: {selected.status}</div>
                   <div className="mt-3 text-[12px] text-[#0D1717]">Created: {new Date(selected.created_at).toLocaleString()}</div>
+                  <div className="mt-3">
+                    <div className="text-[12px] text-[#0D1717] font-medium">User</div>
+                    <div className="text-[12px] text-[#0D1717] mt-1">{selected.user.display_name}</div>
+                    <div className="text-[10px] text-[#6F7777] mt-1">{selected.user.email}</div>
+                    {selected.user.company_name && (
+                      <div className="text-[10px] text-[#6F7777] mt-1">{selected.user.company_name}</div>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <div className="mb-2 text-[12px] text-[#0D1717]">Feedback thread</div>

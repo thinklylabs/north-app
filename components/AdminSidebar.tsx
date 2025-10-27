@@ -17,33 +17,20 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import {
-  Shield,
-  Users,
   Settings,
-  BarChart3,
   Database,
-  Activity,
-  UserCheck,
-  AlertTriangle,
   FileText,
   TrendingUp,
   MessageSquare,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import { UserProfileDropdown } from "@/components/UserProfileDropdown";
 
 // Admin navigation items
 const adminNavigationItems = [
   {
-    title: "Dashboard",
-    url: "/admin",
-    icon: Shield,
-  },
-  {
-    title: "User Management",
-    url: "/admin/users",
-    icon: Users,
+    title: "Feedbacks",
+    url: "/admin/feedbacks",
+    icon: MessageSquare,
   },
   {
     title: "Posts",

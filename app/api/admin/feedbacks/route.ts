@@ -60,9 +60,32 @@ export async function GET(_req: NextRequest) {
   const ideaIds = Array.from(ideaAgg.keys())
 
   const [{ data: posts }, { data: ideas }] = await Promise.all([
-    postIds.length ? admin.from('posts').select('id,post_hook,post_content,status,created_at').in('id', postIds) : Promise.resolve({ data: [] as any[] }),
-    ideaIds.length ? admin.from('ideas').select('id,idea_topic,idea_eq,idea_takeaway,status,created_at').in('id', ideaIds) : Promise.resolve({ data: [] as any[] }),
+    postIds.length ? admin.from('posts').select('id,post_hook,post_content,status,created_at,user_id').in('id', postIds) : Promise.resolve({ data: [] as any[] }),
+    ideaIds.length ? admin.from('ideas').select('id,idea_topic,idea_eq,idea_takeaway,status,created_at,user_id').in('id', ideaIds) : Promise.resolve({ data: [] as any[] }),
   ])
+
+  // Get user information for all posts and ideas
+  const allUserIds = Array.from(new Set([
+    ...(posts || []).map((p: any) => p.user_id).filter(Boolean),
+    ...(ideas || []).map((i: any) => i.user_id).filter(Boolean),
+  ]))
+
+  const { data: userProfiles } = allUserIds.length > 0 
+    ? await admin.from('profiles').select('id,email,first_name,last_name,company_name').in('id', allUserIds)
+    : { data: [] as any[] }
+
+  const userMap = new Map()
+  for (const profile of userProfiles || []) {
+    userMap.set(profile.id, {
+      email: profile.email,
+      first_name: profile.first_name,
+      last_name: profile.last_name,
+      company_name: profile.company_name,
+      display_name: profile.first_name && profile.last_name 
+        ? `${profile.first_name} ${profile.last_name}` 
+        : profile.first_name || profile.last_name || profile.email?.split('@')[0] || 'Unknown User'
+    })
+  }
 
   const postsOut = (posts || []).map((p: any) => ({
     id: p.id as number,
@@ -72,6 +95,7 @@ export async function GET(_req: NextRequest) {
     created_at: p.created_at,
     feedback_count: postAgg.get(p.id)?.count || 0,
     last_feedback_at: postAgg.get(p.id)?.last || p.created_at,
+    user: userMap.get(p.user_id) || { display_name: 'Unknown User', email: 'unknown@example.com' },
   })).filter(x => x.feedback_count > 0)
 
   const ideasOut = (ideas || []).map((i: any) => ({
@@ -82,6 +106,7 @@ export async function GET(_req: NextRequest) {
     created_at: i.created_at,
     feedback_count: ideaAgg.get(i.id)?.count || 0,
     last_feedback_at: ideaAgg.get(i.id)?.last || i.created_at,
+    user: userMap.get(i.user_id) || { display_name: 'Unknown User', email: 'unknown@example.com' },
   })).filter(x => x.feedback_count > 0)
 
   return NextResponse.json({ posts: postsOut, ideas: ideasOut })

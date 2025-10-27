@@ -4,8 +4,9 @@ import type { NextRequest } from 'next/server'
 import { ROLES } from '@/lib/roles'
 
 export async function middleware(request: NextRequest) {
+  
   const { pathname } = request.nextUrl
-
+  
   // Skip middleware for static files, API routes, and auth pages
   if (
     pathname.startsWith('/_next') ||
@@ -23,6 +24,7 @@ export async function middleware(request: NextRequest) {
 
   const supabase = await createClient()
   const { data: { user }, error } = await supabase.auth.getUser()
+  
 
   // If no user, redirect to signin
   if (error || !user) {
@@ -39,10 +41,14 @@ export async function middleware(request: NextRequest) {
     .eq('id', user.id)
     .single()
 
+
+
+
   if (!profile) {
     // If no profile exists, redirect to signin
     return NextResponse.redirect(new URL('/signin', request.url))
   }
+  
 
   // Role-based routing with comprehensive path protection
   if (profile.role === ROLES.ADMIN) {
@@ -53,10 +59,12 @@ export async function middleware(request: NextRequest) {
   } else if (profile.role === ROLES.USER) {
     // Regular users: Block access to ALL admin routes and redirect to user dashboard
     if (pathname.startsWith('/admin/') || pathname === '/admin') {
+
       return NextResponse.redirect(new URL('/users/dashboard', request.url))
     }
     // Redirect root and old dashboard paths to users/dashboard for users
     if (pathname === '/' || pathname === '/dashboard') {
+
       return NextResponse.redirect(new URL('/users/dashboard', request.url))
     }
   }

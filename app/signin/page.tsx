@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
 
 export default function Signin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
@@ -43,6 +45,7 @@ export default function Signin() {
         setError(signInError.message);
         return;
       }
+      console.log(data?.user)
       if (data?.user) {
         router.replace("/onboarding");
       }
@@ -94,8 +97,26 @@ export default function Signin() {
               <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] [border-width:0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
 
               <p className="font-sans text-[12px] leading-[1.3em] text-[#0D1717] mt-[12px] mb-[4px]">Password</p>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] [border-width:0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
-              
+              {/* <Input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] [border-width:0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" /> */}
+              <div className="relative w-full">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="password"
+                  className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] 
+               [border-width:0.5px] px-3 pr-10 text-[12px] leading-[1.3em] 
+               text-[#0D1717] placeholder:text-[#959595]"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2 top-[50%] -translate-y-1/2 text-[#0D1717]"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
               <div className="w-full flex justify-end mt-[8px]">
                 <a href="/forgot-password" className="font-sans text-[12px] leading-[1.3em] text-[#1DC6A1] hover:underline">
                   Forgot password?

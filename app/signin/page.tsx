@@ -93,7 +93,7 @@ export default function Signin() {
             ) : null}
             <div className="mt-[16px] md:mt-[33px] w-[326px] flex flex-col">
               <p className="font-sans text-[12px] leading-[1.3em] text-[#0D1717] mb-[4px]">Email</p>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] [border-width:0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border-[#0D1717] border-[0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
 
               <p className="font-sans text-[12px] leading-[1.3em] text-[#0D1717] mt-[12px] mb-[4px]">Password</p>
               <div className="relative">
@@ -102,7 +102,7 @@ export default function Signin() {
                   value={password} 
                   onChange={(e) => setPassword(e.target.value)} 
                   placeholder="password" 
-                  className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] [border-width:0.5px] px-3 pr-10 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" 
+                  className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border-[#0D1717] border-[0.5px] px-3 pr-10 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" 
                 />
                 <button
                   type="button"

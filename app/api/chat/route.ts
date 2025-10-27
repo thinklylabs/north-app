@@ -35,8 +35,11 @@ export async function POST(request: NextRequest) {
       throw new Error(`RAG search error: ${error.message}`);
     }
 
+    // Ensure relevantSections is always an array
+    let sections = Array.isArray(relevantSections) ? relevantSections : [];
+
     // Fallback: widen threshold if nothing matched
-    if (!relevantSections || relevantSections.length === 0) {
+    if (!sections || sections.length === 0) {
       const wider = await supabase
         .rpc('match_document_sections', {
           query_embedding: questionEmbedding,
@@ -45,13 +48,13 @@ export async function POST(request: NextRequest) {
           limit_count: 5
         })
         .select('content, metadata, section_type');
-      if (!wider.error && wider.data) {
-        relevantSections = wider.data;
+      if (!wider.error && wider.data && Array.isArray(wider.data)) {
+        sections = wider.data;
       }
     }
 
     // Dev fallback: if still empty and a test user is configured, try with that user id
-    if ((!relevantSections || relevantSections.length === 0) && envTestUserId && envTestUserId !== effectiveUserId) {
+    if ((!sections || sections.length === 0) && envTestUserId && envTestUserId !== effectiveUserId) {
       const testUserTry = await supabase
         .rpc('match_document_sections', {
           query_embedding: questionEmbedding,
@@ -60,13 +63,13 @@ export async function POST(request: NextRequest) {
           limit_count: 5
         })
         .select('content, metadata, section_type');
-      if (!testUserTry.error && testUserTry.data) {
-        relevantSections = testUserTry.data;
+      if (!testUserTry.error && testUserTry.data && Array.isArray(testUserTry.data)) {
+        sections = testUserTry.data;
       }
     }
 
     // 3. Generate response using context
-    if (!relevantSections || relevantSections.length === 0) {
+    if (!sections || sections.length === 0) {
       return NextResponse.json({
         success: true,
         response: "I couldn't find relevant context in your knowledge base to answer this. Try ingesting more related content or rephrasing your question.",
@@ -74,12 +77,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const response = await generateChatResponse(message, relevantSections);
+    const response = await generateChatResponse(message, sections);
 
     return NextResponse.json({ 
       success: true, 
       response,
-      context_used: relevantSections?.length || 0
+      context_used: sections?.length || 0
     });
 
   } catch (error) {

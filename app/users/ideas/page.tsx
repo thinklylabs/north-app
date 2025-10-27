@@ -323,7 +323,7 @@ export default function IdeasPage() {
                 id="status-filter"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-[28px] px-2 rounded-[5px] border border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1]"
+                className="h-[28px] px-2 rounded-[5px] border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1]"
               >
                 <option value="">All</option>
                 {STATUS_OPTIONS.map(opt => (
@@ -408,7 +408,7 @@ export default function IdeasPage() {
 
           <div className="mt-6 md:mt-8 w-full max-w-none">
             {loading ? (
-              <div className="rounded-[10px] border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-5">
+              <div className="rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] p-5">
                 <div className="h-[12px] w-[200px] rounded bg-[#EDE8E1] animate-pulse mb-4" />
                 <div className="h-[10px] w-full rounded bg-[#EDE8E1] animate-pulse mb-2" />
                 <div className="h-[10px] w-[90%] rounded bg-[#EDE8E1] animate-pulse" />
@@ -416,7 +416,7 @@ export default function IdeasPage() {
             ) : getFilteredAndSortedIdeas().length === 0 ? (
               <div className="text-[12px] text-[#6F7777]">No ideas found.</div>
             ) : (
-              <div className="overflow-hidden rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
+              <div className="overflow-hidden rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
                 <table className="w-full table-fixed">
                   <thead className="bg-[#F6F2EC]">
                     <tr>
@@ -486,7 +486,7 @@ export default function IdeasPage() {
                                 type="button"
                                 aria-label="Copy topic"
                                 title="Copy topic"
-                                className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
+                                className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   try {
@@ -508,7 +508,7 @@ export default function IdeasPage() {
                                 type="button"
                                 aria-label="Copy EQ"
                                 title="Copy EQ"
-                                className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
+                                className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   if (!eq) return;
@@ -531,7 +531,7 @@ export default function IdeasPage() {
                                 type="button"
                                 aria-label="Copy takeaway"
                                 title="Copy takeaway"
-                                className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
+                                className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   if (!takeaway) return;
@@ -583,7 +583,7 @@ export default function IdeasPage() {
                     <Button
                       variant="ghost"
                       type="button"
-                      className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50"
+                      className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50"
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
                       aria-label="Previous page"
@@ -597,7 +597,7 @@ export default function IdeasPage() {
                     <Button
                       variant="ghost"
                       type="button"
-                      className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50"
+                      className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50"
                       onClick={() => setCurrentPage((p) => Math.min(Math.ceil(getFilteredAndSortedIdeas().length / itemsPerPage), p + 1))}
                       disabled={currentPage >= Math.ceil(getFilteredAndSortedIdeas().length / itemsPerPage)}
                       aria-label="Next page"
@@ -617,15 +617,15 @@ export default function IdeasPage() {
               onClick={() => setSelected(null)}
             >
               <div
-                className="w-full max-w-[90vw] max-h-[90vh] rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px] overflow-hidden flex flex-col"
+                className="w-full max-w-[90vw] max-h-[90vh] rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border-[#171717]/10 border-[0.5px] overflow-hidden flex flex-col"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header */}
-                <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5] rounded-t-[10px] flex-shrink-0">
+                <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 border-[0.5px] bg-[#FCF9F5] rounded-t-[10px] flex-shrink-0">
                   <h3 className={`${oldStandard.className} text-[16px] leading-[1.3em] text-[#0D1717] font-bold`}>Idea</h3>
                   <button
                     type="button"
-                    className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
+                    className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
                     aria-label="Close"
                     onClick={() => setSelected(null)}
                   >
@@ -649,7 +649,7 @@ export default function IdeasPage() {
                         value={editTopic}
                         onChange={(e) => setEditTopic(e.target.value)}
                         placeholder="Topic"
-                        className={`w-full text-[12px] text-[#0D1717] rounded-[8px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] px-3 py-2.5 outline-none`}
+                        className={`w-full text-[12px] text-[#0D1717] rounded-[8px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] px-3 py-2.5 outline-none`}
                       />
                     </div>
                     <div>
@@ -658,7 +658,7 @@ export default function IdeasPage() {
                         value={editEq}
                         onChange={(e) => setEditEq(e.target.value)}
                         placeholder="EQ"
-                        className={`w-full h-[100px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none`}
+                        className={`w-full h-[100px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] p-3 outline-none`}
                       />
                     </div>
                     <div>
@@ -667,14 +667,14 @@ export default function IdeasPage() {
                         value={editTakeaway}
                         onChange={(e) => setEditTakeaway(e.target.value)}
                         placeholder="Takeaway"
-                        className={`w-full h-[100px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none`}
+                        className={`w-full h-[100px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] p-3 outline-none`}
                       />
                     </div>
                   </div>
                   {/* Feedback thread */}
                   <div className="px-5 pb-4">
                     <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Feedback thread</div>
-                    <div className="max-h-[180px] overflow-auto rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-white p-3 mb-3">
+                    <div className="max-h-[180px] overflow-auto rounded-[10px] border-[#171717]/20 border-[0.5px] bg-white p-3 mb-3">
                       {loadingThread ? (
                         <div className="text-[11px] text-[#6F7777]">Loading feedback…</div>
                       ) : threadMessages.length === 0 ? (
@@ -699,7 +699,7 @@ export default function IdeasPage() {
                         value={newIdeaFeedback}
                         onChange={(e) => setNewIdeaFeedback(e.target.value)}
                         placeholder="Suggest changes, ask questions…"
-                        className="flex-1 h-[90px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none"
+                        className="flex-1 h-[90px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] p-3 outline-none"
                       />
                       <Button
                         type="button"
@@ -756,7 +756,7 @@ export default function IdeasPage() {
                 </div>
                 
                 {/* Footer Buttons - Fixed at bottom */}
-                <div className="px-5 pb-4 flex flex-wrap items-center gap-2 flex-shrink-0 border-t border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5]">
+                <div className="px-5 pb-4 flex flex-wrap items-center gap-2 flex-shrink-0 border-t border-[#171717]/10 border-[0.5px] bg-[#FCF9F5]">
                   <Button
                     type="button"
                     className="h-[30px] px-3 rounded-[6px] bg-[#1DC6A1] text-white hover:bg-[#19b391] text-[12px] cursor-pointer"
@@ -787,7 +787,7 @@ export default function IdeasPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="h-[30px] px-3 rounded-[6px] border border-[#171717]/20 [border-width:0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[12px] cursor-pointer"
+                    className="h-[30px] px-3 rounded-[6px] border-[#171717]/20 border-[0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[12px] cursor-pointer"
                     onClick={async () => {
                       const parts: string[] = []
                       if (editTopic) parts.push(editTopic)
@@ -815,7 +815,7 @@ export default function IdeasPage() {
               className="absolute inset-0 bg-black/20 backdrop-blur-[6px]"
               onClick={() => setFeedbackOpen(false)}
             />
-            <div className="relative z-10 w-[640px] max-w-[92vw] rounded-[8px] bg-[#FCF9F5] shadow-xl border border-[#0D1717]/10">
+            <div className="relative z-10 w-[640px] max-w-[92vw] rounded-[8px] bg-[#FCF9F5] shadow-xl border-[#0D1717]/10">
               <div className="p-6">
                 <div className="flex items-start justify-between">
                   <div>
@@ -840,14 +840,14 @@ export default function IdeasPage() {
                     value={feedbackText}
                     onChange={(e) => setFeedbackText(e.target.value)}
                     placeholder="Your feedback..."
-                    className="w-full h-[140px] rounded-[6px] border border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
+                    className="w-full h-[140px] rounded-[6px] border-[#0D1717]/15 bg-white px-3 py-2 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30 resize-none"
                   />
                   <div>
                     <label className="block text-[11px] text-[#6F7777] mb-1">Feedback for</label>
                     <select
                       value={feedbackFor}
                       onChange={(e) => setFeedbackFor(e.target.value as any)}
-                      className="h-[30px] w-full rounded-[6px] border border-[#0D1717]/15 bg-white px-3 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30"
+                      className="h-[30px] w-full rounded-[6px] border-[#0D1717]/15 bg-white px-3 text-[12px] outline-none focus:ring-2 focus:ring-[#1DC6A1]/30"
                     >
                       <option value="idea">ideas</option>
                       <option value="post">posts</option>

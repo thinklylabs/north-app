@@ -73,12 +73,12 @@ export default function WritingStyleModal({ isOpen, onClose, onSuccess }: Writin
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0D1717]/20 backdrop-blur-[6px] p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px]" onClick={(e) => e.stopPropagation()}>
-        <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5] rounded-t-[10px]">
+      <div className="w-full max-w-md rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border-[#171717]/10 border-[0.5px]" onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 border-[0.5px] bg-[#FCF9F5] rounded-t-[10px]">
           <h2 className="text-[16px] leading-[1.3em] text-[#0D1717] font-bold">Tell us about your writing style</h2>
           <button
             type="button"
-            className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer"
+            className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer"
             aria-label="Close"
             onClick={onClose}
           >
@@ -98,7 +98,7 @@ export default function WritingStyleModal({ isOpen, onClose, onSuccess }: Writin
                 value={tone}
                 onChange={(e) => setTone(e.target.value)}
                 placeholder="e.g., Professional, Friendly, Authoritative"
-                className="w-full h-[30px] bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]"
+                className="w-full h-[30px] bg-[#F4F4F4] rounded-[5px] border-[#0D1717] border-[0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]"
               />
             </div>
             
@@ -108,7 +108,7 @@ export default function WritingStyleModal({ isOpen, onClose, onSuccess }: Writin
                 value={formality}
                 onChange={(e) => setFormality(e.target.value)}
                 placeholder="e.g., Formal, Semi-formal, Casual"
-                className="w-full h-[30px] bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]"
+                className="w-full h-[30px] bg-[#F4F4F4] rounded-[5px] border-[#0D1717] border-[0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]"
               />
             </div>
             
@@ -118,7 +118,7 @@ export default function WritingStyleModal({ isOpen, onClose, onSuccess }: Writin
                 value={vocabulary}
                 onChange={(e) => setVocabulary(e.target.value)}
                 placeholder="e.g., Technical, Simple, Academic"
-                className="w-full h-[30px] bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]"
+                className="w-full h-[30px] bg-[#F4F4F4] rounded-[5px] border-[#0D1717] border-[0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]"
               />
             </div>
             
@@ -128,7 +128,7 @@ export default function WritingStyleModal({ isOpen, onClose, onSuccess }: Writin
                 value={typicalLength}
                 onChange={(e) => setTypicalLength(e.target.value)}
                 placeholder="e.g., Short (50-100 words), Medium (100-250 words)"
-                className="w-full h-[30px] bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]"
+                className="w-full h-[30px] bg-[#F4F4F4] rounded-[5px] border-[#0D1717] border-[0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]"
               />
             </div>
             
@@ -138,7 +138,7 @@ export default function WritingStyleModal({ isOpen, onClose, onSuccess }: Writin
                 value={styleRules}
                 onChange={(e) => setStyleRules(e.target.value)}
                 placeholder="e.g., Always start with a question&#10;Use bullet points for lists&#10;Include a call to action"
-                className="w-full h-20 bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] p-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595] resize-none"
+                className="w-full h-20 bg-[#F4F4F4] rounded-[5px] border-[#0D1717] border-[0.5px] p-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595] resize-none"
               />
             </div>
           </div>

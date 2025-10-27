@@ -210,7 +210,7 @@ export default function DashboardPage() {
             Drop your thoughts here.
           </h2>
           <div className="relative">
-            <div className="flex items-center bg-white border border-[#171717]/20 [border-width:0.5px] rounded-full shadow-[0_6px_20px_rgba(13,23,23,0.08)] focus-within:ring-2 focus-within:ring-[#1DC6A1]/20 focus-within:border-[#1DC6A1]/40 transition-[box-shadow,border-color]">
+            <div className="flex items-center bg-white border-[#171717]/20 border-[0.5px] rounded-full shadow-[0_6px_20px_rgba(13,23,23,0.08)] focus-within:ring-2 focus-within:ring-[#1DC6A1]/20 focus-within:border-[#1DC6A1]/40 transition-[box-shadow,border-color]">
               <textarea
                 className="flex-1 min-h-[50px] max-h-[200px] bg-transparent text-[#0D1717] text-[12px] leading-[1.3em] pt-6 pb-3 px-6 outline-none resize-none placeholder:text-[#959595]"
                 placeholder="Got an idea or some random inspiration? Ask your north AM to include that in your weekly content plan"

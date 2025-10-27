@@ -171,10 +171,10 @@ export default function Onboarding() {
             </div>
 
             <p className="font-sans mt-[24px] w-[71px] text-[12px] leading-[1.3em]">Website URL</p>
-            <Input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://www.thinklylabs.com/" className="mt-[7px] w-[326px] h-[30px] bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]" />
+            <Input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://www.thinklylabs.com/" className="mt-[7px] w-[326px] h-[30px] bg-[#F4F4F4] rounded-[5px] border-[#0D1717] border-[0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]" />
 
             <p className="font-sans mt-[24px] w-[88px] text-[12px] leading-[1.3em]">Company Name</p>
-            <Input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="ThinklyLabs" className="mt-[7px] w-[326px] h-[30px] bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]" />
+            <Input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="ThinklyLabs" className="mt-[7px] w-[326px] h-[30px] bg-[#F4F4F4] rounded-[5px] border-[#0D1717] border-[0.5px] px-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]" />
 
             <div className="mt-[60px] w-[326px] flex gap-2">
               <Button
@@ -248,7 +248,7 @@ export default function Onboarding() {
               value={icp}
               onChange={(e) => setIcp(e.target.value)}
               placeholder="e.g. B2B SaaS founders in fintech, 5–50 employees"
-              className="mt-[7px] w-[326px] min-h-[70px] bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] p-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]"
+              className="mt-[7px] w-[326px] min-h-[70px] bg-[#F4F4F4] rounded-[5px] border-[#0D1717] border-[0.5px] p-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]"
             />
 
             <p className="font-sans mt-[24px] w-[220px] text-[12px] leading-[1.3em]">Top pain points for your ICP</p>
@@ -256,7 +256,7 @@ export default function Onboarding() {
               value={icpPainPoints}
               onChange={(e) => setIcpPainPoints(e.target.value)}
               placeholder="List 2-5 pain points..."
-              className="mt-[7px] w-[326px] min-h-[70px] bg-[#F4F4F4] rounded-[5px] border border-[#0D1717] [border-width:0.5px] p-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]"
+              className="mt-[7px] w-[326px] min-h-[70px] bg-[#F4F4F4] rounded-[5px] border-[#0D1717] border-[0.5px] p-[9px] text-[12px] text-[#0D1717] placeholder:text-[#959595]"
             />
 
             <div className="mt-[60px] w-[326px]">

@@ -83,7 +83,11 @@ export async function middleware(request: NextRequest) {
   if (profile.role === ROLES.ADMIN) {
     // Admin users: Block access to ALL user routes and redirect to admin dashboard
     if (pathname.startsWith('/users/') || pathname === '/dashboard' || pathname === '/') {
-      return NextResponse.redirect(new URL('/admin', request.url))
+      return NextResponse.redirect(new URL('/admin/feedbacks', request.url))
+    }
+    // Redirect admin users from /admin to /admin/feedbacks since /admin doesn't exist
+    if (pathname === '/admin') {
+      return NextResponse.redirect(new URL('/admin/feedbacks', request.url))
     }
   } else if (profile.role === ROLES.USER) {
     const isUserRoot = pathname.startsWith('/users/') || pathname === '/dashboard' || pathname === '/'

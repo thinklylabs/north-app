@@ -6,8 +6,9 @@ import { ROLES } from '@/lib/roles'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Skip middleware for static files, API routes, and auth pages
+  // Public routes (bypass auth & role checks)
   if (
+    pathname === '/' ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
     pathname.startsWith('/auth') ||
@@ -47,16 +48,12 @@ export async function middleware(request: NextRequest) {
   // Role-based routing with proper enum values
   if (profile.role === ROLES.ADMIN) {
     // Admin users should be redirected to /admin if they try to access user pages
-    if (pathname === '/users/dashboard' || pathname === '/dashboard' || pathname === '/') {
+    if (pathname === '/users/dashboard' || pathname === '/dashboard') {
       return NextResponse.redirect(new URL('/admin', request.url))
     }
   } else if (profile.role === ROLES.USER) {
     // Regular users should be redirected to /users/dashboard if they try to access /admin
     if (pathname === '/admin') {
-      return NextResponse.redirect(new URL('/users/dashboard', request.url))
-    }
-    // Redirect root to users/dashboard for users
-    if (pathname === '/') {
       return NextResponse.redirect(new URL('/users/dashboard', request.url))
     }
     // Redirect old dashboard path to new users/dashboard path

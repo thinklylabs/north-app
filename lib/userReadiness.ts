@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { ROLES } from '@/lib/roles'
 
 export interface UserReadinessStatus {
   isReady: boolean
@@ -13,7 +14,7 @@ export async function checkUserReadiness(userId: string): Promise<UserReadinessS
     // Check if user has the required fields filled by admin
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('onboarding_summary, themes, id')
+      .select('onboarding_summary, themes, id, role')
       .eq('id', userId)
       .single()
 
@@ -22,6 +23,15 @@ export async function checkUserReadiness(userId: string): Promise<UserReadinessS
         isReady: false,
         missingFields: ['profile'],
         message: 'Profile not found'
+      }
+    }
+
+    // Admins bypass readiness checks
+    if (profile.role === ROLES.ADMIN) {
+      return {
+        isReady: true,
+        missingFields: [],
+        message: 'Admin account'
       }
     }
 

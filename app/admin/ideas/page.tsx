@@ -25,6 +25,8 @@ type IdeaRow = {
   idea_takeaway: string | null;
   created_at: string;
   status?: string | null;
+  feedback_count?: number;
+  last_feedback_at?: string;
   owner?: {
     id: string;
     email: string | null;
@@ -450,6 +452,7 @@ export default function AdminIdeasPage() {
                           <ArrowUpDown className="w-3 h-3" />
                         </button>
                       </th>
+                      <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[10%]">Feedbacks</th>
                       <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[10%]">
                         <button
                           type="button"
@@ -587,6 +590,9 @@ export default function AdminIdeasPage() {
                                 ))}
                               </DropdownMenuContent>
                             </DropdownMenu>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <span className="text-[12px] text-[#0D1717]">{idea.feedback_count ?? 0}</span>
                           </td>
                           <td className="px-4 py-3 align-top">
                             <span className="text-[12px] text-[#0D1717]">

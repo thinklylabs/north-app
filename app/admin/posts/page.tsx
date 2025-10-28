@@ -23,6 +23,8 @@ type PostRow = {
   post_content: string | null;
   created_at: string;
   status?: string | null;
+  feedback_count?: number;
+  last_feedback_at?: string;
   owner?: {
     id: string;
     email: string | null;
@@ -449,7 +451,7 @@ export default function AdminPostsPage() {
                     <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[20%]">Hook</th>
                     <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[20%]">Owner</th>
                     <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[35%]">Post</th>
-                    <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[15%]">
+                    <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[10%]">
                       <button
                         type="button"
                         onClick={() => handleSort('status')}
@@ -459,6 +461,7 @@ export default function AdminPostsPage() {
                         <ArrowUpDown className="w-3 h-3" />
                       </button>
                     </th>
+                    <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[10%]">Feedbacks</th>
                     <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[15%]">
                       <button
                         type="button"
@@ -585,6 +588,9 @@ export default function AdminPostsPage() {
                               ))}
                             </DropdownMenuContent>
                           </DropdownMenu>
+                        </td>
+                        <td className="px-4 py-3 align-top">
+                          <span className="text-[12px] text-[#0D1717]">{row.feedback_count ?? 0}</span>
                         </td>
                         <td className="px-4 py-3 align-top">
                           <span className="text-[12px] text-[#0D1717]">

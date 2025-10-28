@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 function getSupabaseForUser(accessToken: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -29,6 +30,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Determine if requester is an admin
+    const { data: requesterProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+    const isAdmin = requesterProfile?.role === 'admin'
+
     const { searchParams } = new URL(req.url)
     const postIdParam = searchParams.get('postId')
     const ideaIdParam = searchParams.get('ideaId')
@@ -39,25 +48,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Provide either postId or ideaId' }, { status: 400 })
     }
 
-    // Authorization: end users may only read feedback for THEIR OWN post/idea
-    if (postId) {
-      const { data: postOwner } = await supabase
-        .from('posts')
-        .select('user_id')
-        .eq('id', postId)
-        .maybeSingle()
-      if (!postOwner || postOwner.user_id !== user.id) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Authorization: non-admin users may only read feedback for THEIR OWN post/idea
+    if (!isAdmin) {
+      if (postId) {
+        const { data: postOwner } = await supabase
+          .from('posts')
+          .select('user_id')
+          .eq('id', postId)
+          .maybeSingle()
+        if (!postOwner || postOwner.user_id !== user.id) {
+          return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
       }
-    }
-    if (ideaId) {
-      const { data: ideaOwner } = await supabase
-        .from('ideas')
-        .select('user_id')
-        .eq('id', ideaId)
-        .maybeSingle()
-      if (!ideaOwner || ideaOwner.user_id !== user.id) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      if (ideaId) {
+        const { data: ideaOwner } = await supabase
+          .from('ideas')
+          .select('user_id')
+          .eq('id', ideaId)
+          .maybeSingle()
+        if (!ideaOwner || ideaOwner.user_id !== user.id) {
+          return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
       }
     }
 
@@ -66,7 +77,10 @@ export async function GET(req: NextRequest) {
     const targetType = postId ? 'post' : 'idea'
     const targetId = (postId || ideaId) as number
 
-    const { data: feedbackRows, error: feedbackErr } = await supabase
+    // Use service client for admins to bypass RLS and read all feedback
+    const db = isAdmin ? createAdminClient() : supabase
+
+    const { data: feedbackRows, error: feedbackErr } = await db
       .from('feedbacks')
       .select('id, user_id, feedback, created_at')
       .eq('feedback_for', targetType)
@@ -80,7 +94,7 @@ export async function GET(req: NextRequest) {
     const authorIds = Array.from(new Set((feedbackRows || []).map(r => r.user_id)))
     let authorRoles: Record<string, 'admin' | 'user'> = {}
     if (authorIds.length > 0) {
-      const { data: profiles } = await supabase
+      const { data: profiles } = await db
         .from('profiles')
         .select('id, role')
         .in('id', authorIds as string[])
@@ -92,14 +106,14 @@ export async function GET(req: NextRequest) {
     // Insight resolution for display
     let insightPayload: any = null
     if (postId) {
-      const { data: post } = await supabase
+      const { data: post } = await db
         .from('posts')
         .select('insight_id')
         .eq('id', postId)
         .single()
       const insightId = (post?.insight_id as number | null) ?? null
       if (insightId) {
-        const { data: insight } = await supabase
+        const { data: insight } = await db
           .from('insights')
           .select('id, insight')
           .eq('id', insightId)
@@ -107,7 +121,7 @@ export async function GET(req: NextRequest) {
         if (insight) insightPayload = insight
       }
     } else if (ideaId) {
-      const { data: insight } = await supabase
+      const { data: insight } = await db
         .from('insights')
         .select('id, insight')
         .eq('idea_id', ideaId)

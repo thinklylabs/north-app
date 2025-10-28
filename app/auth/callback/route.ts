@@ -34,17 +34,34 @@ export async function GET(request: NextRequest) {
     // Ensure a basic profile exists so middleware doesn't block onboarding
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
-      // Best-effort upsert; ignore errors to avoid blocking login flow
-      await supabase
+      // Preserve existing role; only set role on first insert
+      const { data: existing } = await supabase
         .from('profiles')
-        .upsert(
-          {
+        .select('id, role')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (existing) {
+        // Update email without touching role
+        await supabase
+          .from('profiles')
+          .upsert(
+            {
+              id: user.id,
+              email: user.email,
+            },
+            { onConflict: 'id' }
+          )
+      } else {
+        // First-time insert with default user role
+        await supabase
+          .from('profiles')
+          .insert({
             id: user.id,
             email: user.email,
             role: 'user',
-          },
-          { onConflict: 'id' }
-        )
+          })
+      }
     }
   }
 

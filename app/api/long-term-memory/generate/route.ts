@@ -15,21 +15,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Allow admin to generate memory for specific user via body parameter
+    // Admin-only: require explicit user_id; block normal users
     const body = await req.json().catch(() => ({}))
-    const targetUserId = body?.user_id || user.id
+    const targetUserId = body?.user_id
 
-    // If requesting for another user, check if requester is admin
-    if (targetUserId !== user.id) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
 
-      if (profile?.role !== 'admin') {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
+    if (profile?.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    if (!targetUserId || typeof targetUserId !== 'string') {
+      return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
     }
 
     console.log(`Generating long-term memory for user: ${targetUserId}`)

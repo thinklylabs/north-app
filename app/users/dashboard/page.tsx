@@ -13,7 +13,6 @@ export default function DashboardPage() {
   const [transcript, setTranscript] = useState('');
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isGeneratingMemory, setIsGeneratingMemory] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
@@ -160,29 +159,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Function to generate long-term memory
-  const generateMemory = async () => {
-    setIsGeneratingMemory(true);
-    toast.info('Generating your memory profile... This may take a minute.');
-    try {
-      const res = await fetch('/api/long-term-memory/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(err.error || 'Failed to generate memory');
-      }
-      const result = await res.json();
-      toast.success('Memory profile generated successfully!');
-      console.log('Memory generated:', result);
-    } catch (error) {
-      console.error('Memory generation error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to generate memory');
-    } finally {
-      setIsGeneratingMemory(false);
-    }
-  };
 
   return (
     <div className="min-h-screen w-full bg-[#FCF9F5] text-[#0D1717]">
@@ -191,16 +167,7 @@ export default function DashboardPage() {
           <SidebarTrigger />
           <span className="font-sans text-[12px] leading-[1.3em]">ThinklyLabs  {'>'}  Users  {'>'}  Home</span>
         </div>
-        <div className="flex items-center gap-3">
-          <Button
-            type="button"
-            onClick={generateMemory}
-            disabled={isGeneratingMemory}
-            className="h-[27px] rounded-[5px] bg-[#A4D6CB] hover:bg-[#97CFC3] text-[#0D1717] px-3 py-0 text-[10px] cursor-pointer disabled:opacity-50"
-          >
-            {isGeneratingMemory ? 'Generating...' : 'Generate Memory'}
-          </Button>
-        </div>
+        <div className="flex items-center gap-3" />
       </div>
 
       <div className="px-6 md:px-10 pb-[140px]">

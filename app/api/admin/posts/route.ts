@@ -123,19 +123,43 @@ export async function PATCH(request: NextRequest) {
     const gate = await requireAdmin()
     if (!gate.ok) return NextResponse.json(gate.body, { status: gate.status })
 
-    const { ids, status } = await request.json()
-    if (!Array.isArray(ids) || ids.length === 0 || typeof status !== 'string' || !STATUS_OPTIONS.has(status)) {
+    const payload = await request.json()
+    const { ids, status, post_hook, post_content } = payload || {}
+
+    if (!Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
+    }
+
+    const update: Record<string, any> = {}
+
+    if (typeof status !== 'undefined') {
+      if (typeof status !== 'string' || !STATUS_OPTIONS.has(status)) {
+        return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+      }
+      update.status = status
+    }
+
+    const wantsContentEdit = typeof post_hook !== 'undefined' || typeof post_content !== 'undefined'
+    if (wantsContentEdit) {
+      if (ids.length !== 1) {
+        return NextResponse.json({ error: 'Content edits require exactly one id' }, { status: 400 })
+      }
+      if (typeof post_hook !== 'undefined') update.post_hook = post_hook ?? null
+      if (typeof post_content !== 'undefined') update.post_content = post_content ?? null
+    }
+
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
     }
 
     const admin = createAdminClient()
     const { error } = await admin
       .from('posts')
-      .update({ status })
+      .update(update)
       .in('id', ids)
 
     if (error) {
-      return NextResponse.json({ error: 'Failed to update statuses' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to update posts' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })

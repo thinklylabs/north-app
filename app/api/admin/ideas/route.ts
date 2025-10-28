@@ -121,19 +121,48 @@ export async function PATCH(request: NextRequest) {
     const gate = await requireAdmin()
     if (!gate.ok) return NextResponse.json(gate.body, { status: gate.status })
 
-    const { ids, status } = await request.json()
-    if (!Array.isArray(ids) || ids.length === 0 || typeof status !== 'string' || !STATUS_OPTIONS.has(status)) {
+    const payload = await request.json()
+    const { ids, status, idea_topic, idea_eq, idea_takeaway } = payload || {}
+
+    if (!Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
+    }
+
+    const update: Record<string, any> = {}
+
+    if (typeof status !== 'undefined') {
+      if (typeof status !== 'string' || !STATUS_OPTIONS.has(status)) {
+        return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+      }
+      update.status = status
+    }
+
+    const wantsContentEdit = (
+      typeof idea_topic !== 'undefined' ||
+      typeof idea_eq !== 'undefined' ||
+      typeof idea_takeaway !== 'undefined'
+    )
+    if (wantsContentEdit) {
+      if (ids.length !== 1) {
+        return NextResponse.json({ error: 'Content edits require exactly one id' }, { status: 400 })
+      }
+      if (typeof idea_topic !== 'undefined') update.idea_topic = idea_topic ?? null
+      if (typeof idea_eq !== 'undefined') update.idea_eq = idea_eq ?? null
+      if (typeof idea_takeaway !== 'undefined') update.idea_takeaway = idea_takeaway ?? null
+    }
+
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
     }
 
     const admin = createAdminClient()
     const { error } = await admin
       .from('ideas')
-      .update({ status })
+      .update(update)
       .in('id', ids)
 
     if (error) {
-      return NextResponse.json({ error: 'Failed to update statuses' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to update ideas' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })

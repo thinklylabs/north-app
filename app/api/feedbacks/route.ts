@@ -49,6 +49,9 @@ export async function GET(req: NextRequest) {
     }
 
     // Authorization: non-admin users may only read feedback for THEIR OWN post/idea
+    // Store ownership info for later use in deciding whether to use admin client
+    let isContentOwner = false
+    
     if (!isAdmin) {
       if (postId) {
         const { data: postOwner } = await supabase
@@ -59,6 +62,7 @@ export async function GET(req: NextRequest) {
         if (!postOwner || postOwner.user_id !== user.id) {
           return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
+        isContentOwner = true
       }
       if (ideaId) {
         const { data: ideaOwner } = await supabase
@@ -69,16 +73,19 @@ export async function GET(req: NextRequest) {
         if (!ideaOwner || ideaOwner.user_id !== user.id) {
           return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
+        isContentOwner = true
       }
     }
 
-    // Fetch feedback rows for target. We keep compatibility with existing schema
-    // by querying with (feedback_for, target_id)
+    // Fetch feedback rows for target. Query both legacy (feedback_for, target_id) 
+    // and normalized (post_id, idea_id) columns for robustness
     const targetType = postId ? 'post' : 'idea'
     const targetId = (postId || ideaId) as number
 
-    // Use service client for admins to bypass RLS and read all feedback
-    const db = isAdmin ? createAdminClient() : supabase
+    // Use admin client if: user is admin OR user owns the content
+    // This allows content owners to bypass RLS and see ALL feedback on their content, including admin feedback
+    const useAdminClient = isAdmin || isContentOwner
+    const db = useAdminClient ? createAdminClient() : supabase
 
     const { data: feedbackRows, error: feedbackErr } = await db
       .from('feedbacks')

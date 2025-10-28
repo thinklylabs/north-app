@@ -9,6 +9,7 @@ const SIDEBAR_HIDDEN_PATHS = [
   "/signin",
   "/signup", 
   "/onboarding",
+  "/waiting",
   "/forgot-password",
   "/reset-password",
   "/auth/callback",

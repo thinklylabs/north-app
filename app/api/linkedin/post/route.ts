@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerSupabase } from "@/lib/supabase/server";
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: NextRequest) {
   try {
@@ -154,6 +157,71 @@ export async function POST(req: NextRequest) {
     if (updateError) {
       console.error("Failed to update post status:", updateError);
       // Don't fail the request since LinkedIn posting succeeded
+    }
+
+    // Send email notification to admin after successful LinkedIn posting
+    // This is wrapped in try-catch so email failures don't affect the posting success
+    try {
+      console.log('📧 Attempting to send LinkedIn post notification email...');
+      
+      if (!process.env.RESEND_API_KEY) {
+        throw new Error('RESEND_API_KEY not configured');
+      }
+
+      // Get user profile information for the email
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('email, first_name, last_name, company_name')
+        .eq('id', user.id)
+        .single();
+
+      const userEmail = user?.email || 'Unknown User';
+      const userName = userProfile?.first_name && userProfile?.last_name 
+        ? `${userProfile.first_name} ${userProfile.last_name}`
+        : userProfile?.first_name || user?.email || 'No Name Provided';
+      const companyName = userProfile?.company_name || 'No Company';
+
+      // Truncate post content for email (first 200 characters)
+      const postContent = post.post_content || post.post_hook || 'No content';
+      const truncatedContent = postContent.length > 200 
+        ? postContent.substring(0, 200) + '...' 
+        : postContent;
+
+      const emailPayload = {
+        from: 'LinkedIn Bot <onboarding@resend.dev>',
+        to: 'ansh.shetty.22@gmail.com',
+        subject: `🚀 New LinkedIn Post Published - ${userName}`,
+        html: `
+          <h2>🚀 New LinkedIn Post Published</h2>
+          <p><strong>User:</strong> ${userName} (${userEmail})</p>
+          <p><strong>Company:</strong> ${companyName}</p>
+          <p><strong>Post ID:</strong> ${postId}</p>
+          <p><strong>LinkedIn Account:</strong> ${linkedinUser.account_id}</p>
+          <p><strong>Post Content:</strong></p>
+          <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #0077b5;">
+            ${truncatedContent.replace(/\n/g, '<br>')}
+          </div>
+          ${imageData ? '<p><strong>📷 Post includes an image</strong></p>' : ''}
+          <p><strong>Unipile Response:</strong></p>
+          <div style="background-color: #e8f5e8; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px;">
+            ${JSON.stringify(result, null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;')}
+          </div>
+          <p><em>Posted at: ${new Date().toLocaleString()}</em></p>
+          <hr style="margin: 20px 0;">
+          <p style="font-size: 12px; color: #666;">
+            This notification was sent automatically when a user published a post to LinkedIn through the North platform.
+          </p>
+        `,
+      };
+      
+      console.log('📤 Sending LinkedIn post notification email...');
+      
+      const sendResult = await resend.emails.send(emailPayload);
+
+      console.log('✅ LinkedIn post notification email sent successfully:', sendResult);
+    } catch (emailError: any) {
+      console.error('❌ LinkedIn post notification email failed to send:', emailError);
+      // Don't fail the request - LinkedIn posting was still successful
     }
 
     return NextResponse.json({ success: true, result });

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { EyeOff, Eye } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
 
@@ -26,7 +26,7 @@ export default function Signup() {
     const origin = getOrigin();
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${origin}/auth/callback?next=/onboarding` },
+      options: { redirectTo: `${origin}/auth/callback?next=/dashboard` },
     });
   };
 
@@ -44,7 +44,7 @@ export default function Signup() {
         email,
         password,
         options: {
-          emailRedirectTo: `${origin}/auth/callback?next=/onboarding`,
+          emailRedirectTo: `${origin}/auth/callback?next=/dashboard`,
           data: {
             first_name: firstName,
             last_name: lastName,
@@ -103,39 +103,45 @@ export default function Signup() {
 
             <div className="w-[326px] flex flex-col">
               <p className="font-sans text-[12px] leading-[1.3em] text-[#0D1717] mb-[4px]">First name</p>
-              <Input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] [border-width:0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
+              <Input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border-[#0D1717] border-[0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
 
               <p className="font-sans text-[12px] leading-[1.3em] text-[#0D1717] mt-[12px] mb-[4px]">Last name</p>
-              <Input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] [border-width:0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
+              <Input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border-[#0D1717] border-[0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
 
               <p className="font-sans text-[12px] leading-[1.3em] text-[#0D1717] mt-[12px] mb-[4px]">Email</p>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] [border-width:0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border-[#0D1717] border-[0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
 
               <p className="font-sans text-[12px] leading-[1.3em] text-[#0D1717] mt-[12px] mb-[4px]">Password</p>
-
-              <div className="relative w-full">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="password"
-                  className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] 
-               [border-width:0.5px] px-3 pr-10 text-[12px] leading-[1.3em] 
-               text-[#0D1717] placeholder:text-[#959595]"
+              <div className="relative">
+                <Input 
+                  type={showPassword ? "text" : "password"} 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  placeholder="set a strong password" 
+                  className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border-[#0D1717] border-[0.5px] px-3 pr-10 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" 
                 />
-
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2 top-[50%] -translate-y-1/2 text-[#0D1717]"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#959595] hover:text-[#0D1717] transition-colors"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
-              </div>            </div>
+              </div>
+            </div>
 
             <Button type="button" disabled={loading} onClick={handleSignup} className="mt-[20px] w-[326px] rounded-[5px] bg-[#1DC6A1] hover:bg-[#1DC6A1] flex items-center justify-center py-[6px] h-auto cursor-pointer disabled:opacity-60">
               <span className="font-sans text-white text-[12px] leading-[1.3em]">{loading ? "Creating account..." : "Create account"}</span>
             </Button>
+
+            <div className="mt-[16px] text-center">
+              <span className="font-sans text-[12px] leading-[1.3em] text-[#0D1717]">
+                Already have an account?{' '}
+                <a href="/signin" className="text-[#1DC6A1] hover:underline font-medium">
+                  Sign in
+                </a>
+              </span>
+            </div>
           </section>
 
           <footer className="mt-auto flex items-center justify-center px-6 md:px-0">

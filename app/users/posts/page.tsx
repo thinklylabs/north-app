@@ -318,7 +318,7 @@ export default function PostsPage() {
               id="status-filter"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-[28px] px-2 rounded-[5px] border border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1]"
+              className="h-[28px] px-2 rounded-[5px] border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1]"
             >
               <option value="">All</option>
               {STATUS_OPTIONS.map(opt => (
@@ -403,7 +403,7 @@ export default function PostsPage() {
 
         <div className="mt-6 md:mt-8 w-full max-w-none">
           {loading ? (
-            <div className="rounded-[10px] border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-5">
+            <div className="rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] p-5">
               <div className="h-[12px] w-[200px] rounded bg-[#EDE8E1] animate-pulse mb-4" />
               <div className="h-[10px] w-full rounded bg-[#EDE8E1] animate-pulse mb-2" />
               <div className="h-[10px] w-[90%] rounded bg-[#EDE8E1] animate-pulse" />
@@ -411,7 +411,7 @@ export default function PostsPage() {
           ) : getFilteredAndSortedPosts().length === 0 ? (
             <div className="text-[12px] text-[#6F7777]">No posts found.</div>
           ) : (
-            <div className="overflow-hidden rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
+            <div className="overflow-hidden rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
               <table className="w-full table-fixed">
                 <thead className="bg-[#F6F2EC]">
                   <tr>
@@ -481,7 +481,7 @@ export default function PostsPage() {
                               type="button"
                               aria-label="Copy hook"
                               title="Copy hook"
-                              className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
+                              className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
                               onClick={async (e) => {
                                 e.stopPropagation();
                                 if (!hook) return;
@@ -515,7 +515,7 @@ export default function PostsPage() {
                               type="button"
                               aria-label="Copy post"
                               title="Copy post"
-                              className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
+                              className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
                               onClick={async (e) => {
                                 e.stopPropagation();
                                 if (!content) return;
@@ -566,7 +566,7 @@ export default function PostsPage() {
                   <Button
                     variant="ghost"
                     type="button"
-                    className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50 cursor-pointer"
+                    className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50 cursor-pointer"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     aria-label="Previous page"
@@ -579,7 +579,7 @@ export default function PostsPage() {
                   <Button
                     variant="ghost"
                     type="button"
-                    className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50 cursor-pointer"
+                    className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50 cursor-pointer"
                     onClick={() => setCurrentPage((p) => Math.min(Math.ceil(posts.length / itemsPerPage), p + 1))}
                     disabled={currentPage >= Math.ceil(posts.length / itemsPerPage)}
                     aria-label="Next page"
@@ -598,15 +598,15 @@ export default function PostsPage() {
             onClick={() => setSelectedRow(null)}
           >
             <div
-              className="w-full max-w-[920px] rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px]"
+              className="w-full max-w-[920px] rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border-[#171717]/10 border-[0.5px]"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5] rounded-t-[10px]">
+              <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 border-[0.5px] bg-[#FCF9F5] rounded-t-[10px]">
                 <h3 className={`${oldStandard.className} text-[16px] leading-[1.3em] text-[#0D1717] font-bold`}>Post title</h3>
                 <button
                   type="button"
-                  className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer"
+                  className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer"
                   aria-label="Close"
                   onClick={() => setSelectedRow(null)}
                 >
@@ -627,20 +627,20 @@ export default function PostsPage() {
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     placeholder="Write your post…"
-                    className={`w-full h-[120px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none focus:ring-0 ${oldStandard.className}`}
+                    className={`w-full h-[120px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] p-3 outline-none focus:ring-0 ${oldStandard.className}`}
                   />
                   <div className={`mt-3 mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Hook</div>
                   <input
                     value={editHook}
                     onChange={(e) => setEditHook(e.target.value)}
                     placeholder="Hook"
-                    className={`w-full text-[12px] text-[#0D1717] rounded-[8px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] px-3 py-2.5 outline-none ${oldStandard.className}`}
+                    className={`w-full text-[12px] text-[#0D1717] rounded-[8px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] px-3 py-2.5 outline-none ${oldStandard.className}`}
                   />
 
                 </div>
                 <div>
                   <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Feedback thread</div>
-                  <div className="max-h-[180px] overflow-auto rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-white p-3 mb-3">
+                  <div className="max-h-[180px] overflow-auto rounded-[10px] border-[#171717]/20 border-[0.5px] bg-white p-3 mb-3">
                     {loadingFeedback ? (
                       <div className="text-[11px] text-[#6F7777]">Loading feedback…</div>
                     ) : feedbackMessages.length === 0 ? (
@@ -665,12 +665,12 @@ export default function PostsPage() {
                       value={editFeedback}
                       onChange={(e) => setEditFeedback(e.target.value)}
                       placeholder="Didn't like the post? Want some improvements, comment here, we will update the post in 24h"
-                      className={`w-full h-[140px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 pr-10 outline-none focus:ring-0 ${oldStandard.className}`}
+                      className={`w-full h-[140px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] p-3 pr-10 outline-none focus:ring-0 ${oldStandard.className}`}
                     />
                     <button
                       type="button"
                       aria-label="Send feedback"
-                      className="absolute bottom-3 right-3 inline-flex items-center justify-center w-[28px] h-[28px] rounded-[6px] border border-[#1DC6A1] text-white bg-[#1DC6A1] hover:bg-[#19b391] cursor-pointer"
+                      className="absolute bottom-3 right-3 inline-flex items-center justify-center w-[28px] h-[28px] rounded-[6px] border-[#1DC6A1] text-white bg-[#1DC6A1] hover:bg-[#19b391] cursor-pointer"
                       onClick={async () => {
                         if (!selectedRow || !editFeedback.trim() || sendingFeedback) return
                         const supabase = createClient()
@@ -751,7 +751,7 @@ export default function PostsPage() {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-[30px] px-3 rounded-[6px] border border-[#171717]/20 [border-width:0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[12px] cursor-pointer"
+                  className="h-[30px] px-3 rounded-[6px] border-[#171717]/20 border-[0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[12px] cursor-pointer"
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(editContent || '')
@@ -790,14 +790,14 @@ export default function PostsPage() {
             onClick={() => setShowLinkedInConfirm(false)}
           >
             <div
-              className="w-full max-w-2xl rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px]"
+              className="w-full max-w-2xl rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border-[#171717]/10 border-[0.5px]"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5] rounded-t-[10px]">
+              <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 border-[0.5px] bg-[#FCF9F5] rounded-t-[10px]">
                 <h3 className={`${oldStandard.className} text-[16px] leading-[1.3em] text-[#0D1717] font-bold`}>Post to LinkedIn</h3>
                 <button
                   type="button"
-                  className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer"
+                  className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer"
                   aria-label="Close"
                   onClick={() => setShowLinkedInConfirm(false)}
                 >
@@ -813,7 +813,7 @@ export default function PostsPage() {
                 {/* Preview Content - Centered Layout */}
                 <div className="mb-4 flex justify-center">
                   {/* Post Preview */}
-                  <div className="w-full max-w-2xl p-4 bg-[#F6F2EC] rounded-[8px] border border-[#171717]/10">
+                  <div className="w-full max-w-2xl p-4 bg-[#F6F2EC] rounded-[8px] border-[#171717]/10">
                     <p className="text-[12px] text-[#6F7777] mb-2 font-medium">Post Preview:</p>
                     <div className="text-[13px] text-[#0D1717] leading-[1.4] whitespace-pre-wrap max-h-[120px] overflow-y-auto">
                       {editContent || selectedRow?.post_content || 'No content'}
@@ -830,7 +830,7 @@ export default function PostsPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="h-[30px] px-3 rounded-[6px] border border-[#171717]/20 [border-width:0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[12px] cursor-pointer"
+                    className="h-[30px] px-3 rounded-[6px] border-[#171717]/20 border-[0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[12px] cursor-pointer"
                     onClick={() => setShowLinkedInConfirm(false)}
                   >
                     Cancel

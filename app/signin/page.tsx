@@ -6,14 +6,14 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { EyeOff, Eye } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
 
 export default function Signin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setshowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
@@ -25,7 +25,7 @@ export default function Signin() {
     const origin = getOrigin();
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${origin}/auth/callback?next=/onboarding` },
+      options: { redirectTo: `${origin}/auth/callback?next=/dashboard` },
     });
   };
 
@@ -45,8 +45,9 @@ export default function Signin() {
         setError(signInError.message);
         return;
       }
+      console.log(data?.user)
       if (data?.user) {
-        router.replace("/onboarding");
+        router.replace("/dashboard");
       }
     } finally {
       setLoading(false);
@@ -93,28 +94,26 @@ export default function Signin() {
             ) : null}
             <div className="mt-[16px] md:mt-[33px] w-[326px] flex flex-col">
               <p className="font-sans text-[12px] leading-[1.3em] text-[#0D1717] mb-[4px]">Email</p>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] [border-width:0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border-[#0D1717] border-[0.5px] px-3 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" />
 
               <p className="font-sans text-[12px] leading-[1.3em] text-[#0D1717] mt-[12px] mb-[4px]">Password</p>
-              <div className="relative w-full">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="password"
-                  className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border border-[#0D1717] 
-               [border-width:0.5px] px-3 pr-10 text-[12px] leading-[1.3em] 
-               text-[#0D1717] placeholder:text-[#959595]"
+              <div className="relative">
+                <Input 
+                  type={showPassword ? "text" : "password"} 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  placeholder="password" 
+                  className="w-full h-[30px] rounded-[5px] bg-[#F4F4F4] border-[#0D1717] border-[0.5px] px-3 pr-10 text-[12px] leading-[1.3em] text-[#0D1717] placeholder:text-[#959595]" 
                 />
-
                 <button
                   type="button"
-                  onClick={() => setshowPassword(!showPassword)}
-                  className="absolute right-2 top-[50%] -translate-y-1/2 text-[#0D1717]"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#959595] hover:text-[#0D1717] transition-colors"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              
               <div className="w-full flex justify-end mt-[8px]">
                 <a href="/forgot-password" className="font-sans text-[12px] leading-[1.3em] text-[#1DC6A1] hover:underline">
                   Forgot password?
@@ -125,6 +124,15 @@ export default function Signin() {
             <Button type="button" disabled={loading} onClick={handleSignin} className="mt-[10px] w-[326px] rounded-[5px] bg-[#1DC6A1] hover:bg-[#1DC6A1] flex items-center justify-center py-[6px] h-auto cursor-pointer disabled:opacity-60">
               <span className="font-sans text-white text-[12px] leading-[1.3em]">{loading ? "Signing in..." : "Sign in"}</span>
             </Button>
+
+            <div className="mt-[16px] text-center">
+              <span className="font-sans text-[12px] leading-[1.3em] text-[#0D1717]">
+                Don't have an account?{' '}
+                <a href="/signup" className="text-[#1DC6A1] hover:underline font-medium">
+                  Sign up
+                </a>
+              </span>
+            </div>
           </section>
 
           <footer className="mt-auto flex items-center justify-center px-6 md:px-0">

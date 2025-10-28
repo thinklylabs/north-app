@@ -142,7 +142,7 @@ export function UserProfileDropdown() {
       <DropdownMenuContent 
         side="right" 
         align="start" 
-        className="w-[280px] p-0 bg-[#FCF9F5] border border-[#171717]/10 rounded-[8px] shadow-[0_10px_30px_rgba(13,23,23,0.2)] mb-2"
+        className="w-[280px] p-0 bg-[#FCF9F5] border-[#171717]/10 rounded-[8px] shadow-[0_10px_30px_rgba(13,23,23,0.2)] mb-2"
       >
         {/* Header */}
         <div className="p-4 border-b border-[#171717]/10">
@@ -169,7 +169,7 @@ export function UserProfileDropdown() {
           
           <DropdownMenuItem 
             className="flex items-center gap-3 px-4 py-3 hover:bg-[#F6F2EC] cursor-pointer"
-            onClick={() => window.open('mailto:vedant@thinklylabs.com', '_blank')}
+            onClick={() => window.location.href = '/feedback'}
           >
             <MessageSquare className="w-4 h-4 text-[#6F7777]" />
             <span className="text-[12px] text-[#0D1717]">Give us feedback</span>

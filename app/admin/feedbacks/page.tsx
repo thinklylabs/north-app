@@ -89,7 +89,7 @@ export default function AdminFeedbacksPage() {
         <h1 className={`${oldStandard.className} text-[30px] leading-[1.236em] mt-[30px]`}>Feedbacks</h1>
 
         {loading ? (
-          <div className="mt-6 rounded-[10px] border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-5">
+          <div className="mt-6 rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] p-5">
             <div className="h-[12px] w-[200px] rounded bg-[#EDE8E1] animate-pulse mb-4" />
             <div className="h-[10px] w-full rounded bg-[#EDE8E1] animate-pulse mb-2" />
             <div className="h-[10px] w-[90%] rounded bg-[#EDE8E1] animate-pulse" />
@@ -97,7 +97,7 @@ export default function AdminFeedbacksPage() {
         ) : rows.length === 0 ? (
           <div className="mt-6 text-[12px] text-[#6F7777]">No feedback yet.</div>
         ) : (
-          <div className="mt-6 overflow-hidden rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
+          <div className="mt-6 overflow-hidden rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
             <table className="w-full table-fixed">
               <thead className="bg-[#F6F2EC]">
                 <tr>
@@ -135,10 +135,10 @@ export default function AdminFeedbacksPage() {
 
         {selected && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0D1717]/20 backdrop-blur-[6px] p-4" onClick={() => setSelected(null)}>
-            <div className="w-full max-w-[920px] rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px]" onClick={(e) => e.stopPropagation()}>
-              <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5] rounded-t-[10px]">
+            <div className="w-full max-w-[920px] rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border-[#171717]/10 border-[0.5px]" onClick={(e) => e.stopPropagation()}>
+              <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 border-[0.5px] bg-[#FCF9F5] rounded-t-[10px]">
                 <h3 className={`${oldStandard.className} text-[16px] leading-[1.3em] text-[#0D1717] font-bold`}>{selected.type === 'post' ? 'Post' : 'Idea'} details</h3>
-                <button type="button" className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer" aria-label="Close" onClick={() => setSelected(null)}>✕</button>
+                <button type="button" className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer" aria-label="Close" onClick={() => setSelected(null)}>✕</button>
               </div>
               <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -157,7 +157,7 @@ export default function AdminFeedbacksPage() {
                 </div>
                 <div>
                   <div className="mb-2 text-[12px] text-[#0D1717]">Feedback thread</div>
-                  <div className="max-h-[220px] overflow-auto rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-white p-3 mb-3">
+                  <div className="max-h-[220px] overflow-auto rounded-[10px] border-[#171717]/20 border-[0.5px] bg-white p-3 mb-3">
                     {loadingThread ? (
                       <div className="text-[11px] text-[#6F7777]">Loading…</div>
                     ) : !thread || (thread.messages || []).length === 0 ? (

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Copy, Trash2, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -24,6 +25,8 @@ type IdeaRow = {
   idea_takeaway: string | null;
   created_at: string;
   status?: string | null;
+  feedback_count?: number;
+  last_feedback_at?: string;
   owner?: {
     id: string;
     email: string | null;
@@ -271,7 +274,13 @@ export default function AdminIdeasPage() {
       if (!selected) return;
       try {
         setLoadingThread(true);
-        const res = await fetch(`/api/feedbacks?ideaId=${selected.id}`);
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        
+        const res = await fetch(`/api/feedbacks?ideaId=${selected.id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined
+        });
         if (!res.ok) {
           setThreadMessages([]);
           return;
@@ -309,7 +318,7 @@ export default function AdminIdeasPage() {
                 id="status-filter"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-[28px] px-2 rounded-[5px] border border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1]"
+                className="h-[28px] px-2 rounded-[5px] border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1]"
               >
                 <option value="">All</option>
                 {STATUS_OPTIONS.map(opt => (
@@ -323,7 +332,7 @@ export default function AdminIdeasPage() {
                 id="owner-filter"
                 value={ownerFilter}
                 onChange={(e) => setOwnerFilter(e.target.value)}
-                className="h-[28px] px-2 rounded-[5px] border border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1]"
+                className="h-[28px] px-2 rounded-[5px] border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1]"
               >
                 <option value="">All</option>
                 {ownerOptions.map(o => (
@@ -409,7 +418,7 @@ export default function AdminIdeasPage() {
 
           <div className="mt-6 md:mt-8 w-full max-w-none">
             {loading ? (
-              <div className="rounded-[10px] border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-5">
+              <div className="rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] p-5">
                 <div className="h-[12px] w-[200px] rounded bg-[#EDE8E1] animate-pulse mb-4" />
                 <div className="h-[10px] w-full rounded bg-[#EDE8E1] animate-pulse mb-2" />
                 <div className="h-[10px] w-[90%] rounded bg-[#EDE8E1] animate-pulse" />
@@ -417,7 +426,7 @@ export default function AdminIdeasPage() {
             ) : getFilteredAndSortedIdeas().length === 0 ? (
               <div className="text-[12px] text-[#6F7777]">No ideas found.</div>
             ) : (
-              <div className="overflow-hidden rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
+              <div className="overflow-hidden rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
                 <table className="w-full table-fixed">
                   <thead className="bg-[#F6F2EC]">
                     <tr>
@@ -443,6 +452,7 @@ export default function AdminIdeasPage() {
                           <ArrowUpDown className="w-3 h-3" />
                         </button>
                       </th>
+                      <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[10%]">Feedbacks</th>
                       <th className="text-left text-[11px] font-medium text-[#6F7777] px-4 py-3 w-[10%]">
                         <button
                           type="button"
@@ -492,7 +502,7 @@ export default function AdminIdeasPage() {
                                 type="button"
                                 aria-label="Copy topic"
                                 title="Copy topic"
-                                className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
+                                className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   try {
@@ -522,7 +532,7 @@ export default function AdminIdeasPage() {
                                 type="button"
                                 aria-label="Copy EQ"
                                 title="Copy EQ"
-                                className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
+                                className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   if (!eq) return;
@@ -545,7 +555,7 @@ export default function AdminIdeasPage() {
                                 type="button"
                                 aria-label="Copy takeaway"
                                 title="Copy takeaway"
-                                className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
+                                className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   if (!takeaway) return;
@@ -582,6 +592,9 @@ export default function AdminIdeasPage() {
                             </DropdownMenu>
                           </td>
                           <td className="px-4 py-3 align-top">
+                            <span className="text-[12px] text-[#0D1717]">{idea.feedback_count ?? 0}</span>
+                          </td>
+                          <td className="px-4 py-3 align-top">
                             <span className="text-[12px] text-[#0D1717]">
                               {formatDate(idea.created_at)}
                             </span>
@@ -597,7 +610,7 @@ export default function AdminIdeasPage() {
                     <Button
                       variant="ghost"
                       type="button"
-                      className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50"
+                      className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50"
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
                       aria-label="Previous page"
@@ -610,7 +623,7 @@ export default function AdminIdeasPage() {
                     <Button
                       variant="ghost"
                       type="button"
-                      className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50"
+                      className="h-[28px] w-[28px] inline-flex items-center justify-center rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] bg-transparent hover:bg-[#EDE8E1] px-0 py-0 text-[10px] disabled:opacity-50"
                       onClick={() => setCurrentPage((p) => Math.min(Math.ceil(getFilteredAndSortedIdeas().length / itemsPerPage), p + 1))}
                       disabled={currentPage >= Math.ceil(getFilteredAndSortedIdeas().length / itemsPerPage)}
                       aria-label="Next page"
@@ -629,15 +642,15 @@ export default function AdminIdeasPage() {
               onClick={() => setSelected(null)}
             >
               <div
-                className="w-full max-w-[90vw] max-h-[90vh] rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border border-[#171717]/10 [border-width:0.5px] overflow-hidden flex flex-col"
+                className="w-full max-w-[90vw] max-h-[90vh] rounded-[10px] bg-[#FCF9F5] shadow-[0_10px_30px_rgba(13,23,23,0.2)] border-[#171717]/10 border-[0.5px] overflow-hidden flex flex-col"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Header */}
-                <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5] rounded-t-[10px] flex-shrink-0">
+                <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 border-[0.5px] bg-[#FCF9F5] rounded-t-[10px] flex-shrink-0">
                   <h3 className={`${oldStandard.className} text-[16px] leading-[1.3em] text-[#0D1717] font-bold`}>Idea</h3>
                   <button
                     type="button"
-                    className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
+                    className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
                     aria-label="Close"
                     onClick={() => setSelected(null)}
                   >
@@ -661,7 +674,7 @@ export default function AdminIdeasPage() {
                         value={editTopic}
                         onChange={(e) => setEditTopic(e.target.value)}
                         placeholder="Topic"
-                        className={`w-full text-[12px] text-[#0D1717] rounded-[8px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] px-3 py-2.5 outline-none`}
+                        className={`w-full text-[12px] text-[#0D1717] rounded-[8px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] px-3 py-2.5 outline-none`}
                       />
                     </div>
                     <div>
@@ -670,7 +683,7 @@ export default function AdminIdeasPage() {
                         value={editEq}
                         onChange={(e) => setEditEq(e.target.value)}
                         placeholder="EQ"
-                        className={`w-full h-[100px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none`}
+                        className={`w-full h-[100px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] p-3 outline-none`}
                       />
                     </div>
                     <div>
@@ -679,14 +692,14 @@ export default function AdminIdeasPage() {
                         value={editTakeaway}
                         onChange={(e) => setEditTakeaway(e.target.value)}
                         placeholder="Takeaway"
-                        className={`w-full h-[100px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none`}
+                        className={`w-full h-[100px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] p-3 outline-none`}
                       />
                     </div>
                   </div>
                   {/* Feedback thread */}
                   <div className="px-5 pb-4">
                     <div className={`mb-2 text-[12px] text-[#0D1717] ${oldStandard.className}`}>Feedback thread</div>
-                    <div className="max-h-[180px] overflow-auto rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-white p-3 mb-3">
+                    <div className="max-h-[180px] overflow-auto rounded-[10px] border-[#171717]/20 border-[0.5px] bg-white p-3 mb-3">
                       {loadingThread ? (
                         <div className="text-[11px] text-[#6F7777]">Loading feedback…</div>
                       ) : threadMessages.length === 0 ? (
@@ -711,7 +724,7 @@ export default function AdminIdeasPage() {
                         value={newIdeaFeedback}
                         onChange={(e) => setNewIdeaFeedback(e.target.value)}
                         placeholder="Suggest changes, ask questions…"
-                        className="flex-1 h-[90px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border border-[#171717]/20 [border-width:0.5px] bg-[#FCF9F5] p-3 outline-none"
+                        className="flex-1 h-[90px] resize-none text-[12px] leading-[1.6em] text-[#0D1717] rounded-[10px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] p-3 outline-none"
                       />
                       <Button
                         type="button"
@@ -721,10 +734,15 @@ export default function AdminIdeasPage() {
                           if (!selected) return;
                           try {
                             setSendingIdeaFeedback(true);
+                            const supabase = createClient();
+                            const { data: { session } } = await supabase.auth.getSession();
+                            const token = session?.access_token;
+                            
                             const res = await fetch('/api/feedbacks', {
                               method: 'POST',
                               headers: {
                                 'Content-Type': 'application/json',
+                                ...(token ? { Authorization: `Bearer ${token}` } : {})
                               },
                               body: JSON.stringify({
                                 feedback_for: 'idea',
@@ -740,7 +758,13 @@ export default function AdminIdeasPage() {
                             setNewIdeaFeedback('');
                             // refresh messages
                             try {
-                              const r = await fetch(`/api/feedbacks?ideaId=${selected.id}`);
+                              const supabase = createClient();
+                              const { data: { session } } = await supabase.auth.getSession();
+                              const token = session?.access_token;
+                              
+                              const r = await fetch(`/api/feedbacks?ideaId=${selected.id}`, {
+                                headers: token ? { Authorization: `Bearer ${token}` } : undefined
+                              });
                               if (r.ok) {
                                 const j = await r.json();
                                 setThreadMessages(Array.isArray(j?.messages) ? j.messages : []);
@@ -760,7 +784,7 @@ export default function AdminIdeasPage() {
                 </div>
                 
                 {/* Footer Buttons - Fixed at bottom */}
-                <div className="px-5 pb-4 flex flex-wrap items-center gap-2 flex-shrink-0 border-t border-[#171717]/10 [border-width:0.5px] bg-[#FCF9F5]">
+                <div className="px-5 pb-4 flex flex-wrap items-center gap-2 flex-shrink-0 border-t border-[#171717]/10 border-[0.5px] bg-[#FCF9F5]">
                   <Button
                     type="button"
                     className="h-[30px] px-3 rounded-[6px] bg-[#1DC6A1] text-white hover:bg-[#19b391] text-[12px] cursor-pointer"
@@ -794,7 +818,7 @@ export default function AdminIdeasPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="h-[30px] px-3 rounded-[6px] border border-[#171717]/20 [border-width:0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[12px] cursor-pointer"
+                    className="h-[30px] px-3 rounded-[6px] border-[#171717]/20 border-[0.5px] bg-white text-[#0D1717] hover:bg-[#EDE8E1] text-[12px] cursor-pointer"
                     onClick={async () => {
                       const parts: string[] = []
                       if (editTopic) parts.push(editTopic)

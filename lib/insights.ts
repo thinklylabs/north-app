@@ -56,7 +56,10 @@ async function fetchRagContextForTopic(userId: string, topic: string): Promise<s
     throw error
   }
 
-  if (!data || data.length === 0) {
+  // Ensure data is always an array
+  let sections = Array.isArray(data) ? data : [];
+
+  if (!sections || sections.length === 0) {
     const wider = await supabase
       .rpc('match_document_sections', {
         query_embedding: embedding,
@@ -65,12 +68,12 @@ async function fetchRagContextForTopic(userId: string, topic: string): Promise<s
         limit_count: 5
       })
       .select('content, section_type')
-    if (!wider.error && wider.data) {
-      data = wider.data
+    if (!wider.error && wider.data && Array.isArray(wider.data)) {
+      sections = wider.data
     }
   }
 
-  const contextText = (data || [])
+  const contextText = (sections || [])
     .map((c: any, i: number) => `(${i + 1}) [${c.section_type}] ${c.content}`)
     .join('\n')
 

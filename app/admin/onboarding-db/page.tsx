@@ -57,6 +57,7 @@ export default function OnboardingDBPage() {
   const [ltm, setLtm] = useState<LongTermMemory>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [generatingMemory, setGeneratingMemory] = useState(false);
 
   const [summaryDraft, setSummaryDraft] = useState<string>("");
   const [themesDraft, setThemesDraft] = useState<string[]>([]);
@@ -138,6 +139,32 @@ export default function OnboardingDBPage() {
     setThemesDraft((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  const generateMemory = async () => {
+    if (!selectedUserId) return;
+    try {
+      setGeneratingMemory(true);
+      const resp = await fetch('/api/long-term-memory/generate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ user_id: selectedUserId }),
+      });
+      if (!resp.ok) throw new Error(await resp.text());
+      
+      // Reload the user details to show the newly generated memory
+      const detailsResp = await fetch(`/api/admin/onboarding?userId=${encodeURIComponent(selectedUserId)}`, { cache: "no-store" });
+      if (detailsResp.ok) {
+        const json = await detailsResp.json();
+        setLtm(json.long_term_memory || null);
+      }
+      
+      toast.success('Memory generated successfully');
+    } catch (e) {
+      toast.error('Failed to generate memory');
+    } finally {
+      setGeneratingMemory(false);
+    }
+  };
+
   return (
     <div className="min-h-screen w-full bg-[#FCF9F5] text-[#0D1717]">
       <div className="flex items-center p-6 md:px-10">
@@ -157,7 +184,7 @@ export default function OnboardingDBPage() {
             <div className="md:col-span-2">
               <Label className="text-[12px]">Select user</Label>
               <select
-                className="h-[28px] px-2 rounded-[5px] border border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1] w-full"
+                className="h-[28px] px-2 rounded-[5px] border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1] w-full"
                 value={selectedUserId}
                 onChange={(e) => setSelectedUserId(e.target.value)}
                 disabled={loadingUsers}
@@ -189,7 +216,7 @@ export default function OnboardingDBPage() {
               <div className="space-y-2">
                 <Label className="text-[12px]">Summary (editable)</Label>
                 <textarea
-                  className="w-full min-h-[160px] text-[12px] border border-[#171717]/20 rounded p-2 bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1]"
+                  className="w-full min-h-[160px] text-[12px] border-[#171717]/20 rounded p-2 bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1]"
                   value={summaryDraft}
                   onChange={(e) => setSummaryDraft(e.target.value)}
                   placeholder="Add or edit onboarding call summary..."
@@ -214,7 +241,7 @@ export default function OnboardingDBPage() {
                     {themesDraft.map((t, idx) => (
                       <div key={idx} className="flex items-center gap-2">
                         <input
-                          className="h-[28px] px-2 rounded-[5px] border border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1] flex-1"
+                          className="h-[28px] px-2 rounded-[5px] border-[#171717]/20 text-[11px] bg-[#FCF9F5] focus:outline-none focus:ring-1 focus:ring-[#1DC6A1] flex-1"
                           value={t}
                           onChange={(e) => updateTheme(idx, e.target.value)}
                           placeholder={`Theme ${idx + 1}`}
@@ -274,14 +301,32 @@ export default function OnboardingDBPage() {
               </Card>
 
               <Card className="p-4">
-                <h3 className="text-[14px] mb-2">User long-term memory</h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-[14px]">User long-term memory</h3>
+                  <Button 
+                    onClick={generateMemory} 
+                    disabled={generatingMemory || !selectedUserId}
+                    className="h-[24px] px-2 text-[10px]"
+                    size="sm"
+                  >
+                    {generatingMemory ? 'Generating...' : 'Generate Memory'}
+                  </Button>
+                </div>
                 <Separator className="my-2" />
                 {!ltm || !ltm.memory_content ? (
-                  <p className="text-[12px] text-[#6F7777]">No memory generated yet.</p>
+                  <div className="space-y-2">
+                    <p className="text-[12px] text-[#6F7777]">No memory generated yet.</p>
+                    <p className="text-[10px] text-[#6F7777]">Click "Generate Memory" to create a comprehensive memory profile based on the user's content and profile.</p>
+                  </div>
                 ) : (
-                  <pre className="whitespace-pre-wrap text-[11px] max-h-[260px] overflow-auto bg-white p-2 rounded border">
-                    {ltm.memory_content}
-                  </pre>
+                  <div className="space-y-2">
+                    <div className="text-[10px] text-[#6F7777]">
+                      Last updated: {ltm.last_updated ? new Date(ltm.last_updated).toLocaleString() : 'Unknown'}
+                    </div>
+                    <pre className="whitespace-pre-wrap text-[11px] max-h-[260px] overflow-auto bg-white p-2 rounded border">
+                      {ltm.memory_content}
+                    </pre>
+                  </div>
                 )}
               </Card>
             </div>

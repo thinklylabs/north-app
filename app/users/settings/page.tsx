@@ -188,7 +188,7 @@ export default function SettingsPage() {
 
         <div className="mt-12 space-y-12">
           {/* User Profile Section */}
-          <div className="p-8 rounded-[12px] bg-white border border-[#171717]/20 [border-width:0.5px] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
+          <div className="p-8 rounded-[12px] bg-white border-[#171717]/20 border-[0.5px] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <User className="w-6 h-6 text-[#1DC6A1]" />
@@ -277,7 +277,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Password Change Section */}
-          <div className="p-8 rounded-[12px] bg-white border border-[#171717]/20 [border-width:0.5px] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
+          <div className="p-8 rounded-[12px] bg-white border-[#171717]/20 border-[0.5px] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
             <div className="flex items-center gap-3 mb-8">
               <Lock className="w-6 h-6 text-[#1DC6A1]" />
               <h2 className={`${oldStandard.className} text-[20px] leading-[1.236em]`}>Change Password</h2>
@@ -328,7 +328,7 @@ export default function SettingsPage() {
           </div>
 
           {/* LinkedIn Integration Section */}
-          <div className="p-8 rounded-[12px] bg-white border border-[#171717]/20 [border-width:0.5px] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
+          <div className="p-8 rounded-[12px] bg-white border-[#171717]/20 border-[0.5px] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
             <div className="flex items-center gap-3 mb-6">
               <Linkedin className="w-6 h-6 text-[#1DC6A1]" />
               <h2 className={`${oldStandard.className} text-[20px] leading-[1.236em]`}>LinkedIn Integration</h2>
@@ -349,7 +349,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Get in Touch Section */}
-          <div className="p-8 rounded-[12px] bg-white border border-[#171717]/20 [border-width:0.5px] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
+          <div className="p-8 rounded-[12px] bg-white border-[#171717]/20 border-[0.5px] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
             <div className="flex items-center gap-3 mb-6">
               <HelpCircle className="w-6 h-6 text-[#1DC6A1]" />
               <h2 className={`${oldStandard.className} text-[20px] leading-[1.236em]`}>Get in Touch</h2>
@@ -370,7 +370,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Logout Section */}
-          <div className="p-8 rounded-[12px] bg-white border border-[#171717]/20 [border-width:0.5px] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
+          <div className="p-8 rounded-[12px] bg-white border-[#171717]/20 border-[0.5px] shadow-[0_6px_20px_rgba(13,23,23,0.08)]">
             <div className="flex items-center gap-3 mb-6">
               <LogOut className="w-6 h-6 text-[#1DC6A1]" />
               <h2 className={`${oldStandard.className} text-[20px] leading-[1.236em]`}>Account Actions</h2>

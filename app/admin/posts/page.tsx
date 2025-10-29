@@ -833,7 +833,7 @@ export default function AdminPostsPage() {
         {/* LinkedIn Post Confirmation Modal */}
         {showLinkedInConfirm && (
           <div
-            className="fixed inset-0 z-60 flex items-center justify-center bg-[#0D1717]/20 backdrop-blur-[6px] p-4"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0D1717]/20 backdrop-blur-[6px] p-4"
             onClick={() => setShowLinkedInConfirm(false)}
           >
             <div

@@ -31,19 +31,40 @@ export async function GET(request: NextRequest) {
     const searchParams = new URL(request.url).searchParams
     const owner = searchParams.get('owner') // optional owner filter (profile id)
 
-    let query = admin
+    // Fetch ideas (optionally filter by owner)
+    let ideasQuery = admin
       .from('ideas')
       .select('id, idea_topic, idea_eq, idea_takeaway, created_at, status, user_id')
       .order('created_at', { ascending: false })
-      .limit(500)
+      .limit(1000)
 
     if (owner) {
-      query = query.eq('user_id', owner)
+      ideasQuery = ideasQuery.eq('user_id', owner)
     }
 
-    const { data: ideas, error: ideasError } = await query
+    const { data: ideas, error: ideasError } = await ideasQuery
     if (ideasError) {
       return NextResponse.json({ error: 'Failed to load ideas' }, { status: 500 })
+    }
+
+    // Aggregate feedback counts for the fetched ideas
+    const ideaIds = Array.from(new Set((ideas || []).map((i: any) => i.id)))
+    const ideaAgg = new Map<number, { count: number, last: string }>()
+    if (ideaIds.length > 0) {
+      const orClause = `idea_id.in.(${ideaIds.join(',')}),and(feedback_for.eq.idea,target_id.in.(${ideaIds.join(',')}))`
+      const { data: fbRows } = await admin
+        .from('feedbacks')
+        .select('idea_id,target_id,created_at')
+        .or(orClause)
+        .limit(20000)
+      for (const r of (fbRows || [])) {
+        const id = (r as any).idea_id ?? (r as any).target_id
+        if (!id) continue
+        const created = (r as any).created_at as string
+        const cur = ideaAgg.get(id)
+        if (!cur) ideaAgg.set(id, { count: 1, last: created })
+        else ideaAgg.set(id, { count: cur.count + 1, last: (new Date(created) > new Date(cur.last)) ? created : cur.last })
+      }
     }
 
     const userIds = Array.from(new Set((ideas || []).map(i => i.user_id).filter(Boolean)))
@@ -65,6 +86,8 @@ export async function GET(request: NextRequest) {
     const merged = (ideas || []).map(i => ({
       ...i,
       owner: profilesById[(i as any).user_id as string] || null,
+      feedback_count: ideaAgg.get((i as any).id)?.count || 0,
+      last_feedback_at: ideaAgg.get((i as any).id)?.last || (i as any).created_at,
     }))
     // Build full owners list independent of filter
     const { data: allIdeas, error: allIdeasError } = await admin
@@ -98,19 +121,48 @@ export async function PATCH(request: NextRequest) {
     const gate = await requireAdmin()
     if (!gate.ok) return NextResponse.json(gate.body, { status: gate.status })
 
-    const { ids, status } = await request.json()
-    if (!Array.isArray(ids) || ids.length === 0 || typeof status !== 'string' || !STATUS_OPTIONS.has(status)) {
+    const payload = await request.json()
+    const { ids, status, idea_topic, idea_eq, idea_takeaway } = payload || {}
+
+    if (!Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
+    }
+
+    const update: Record<string, any> = {}
+
+    if (typeof status !== 'undefined') {
+      if (typeof status !== 'string' || !STATUS_OPTIONS.has(status)) {
+        return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+      }
+      update.status = status
+    }
+
+    const wantsContentEdit = (
+      typeof idea_topic !== 'undefined' ||
+      typeof idea_eq !== 'undefined' ||
+      typeof idea_takeaway !== 'undefined'
+    )
+    if (wantsContentEdit) {
+      if (ids.length !== 1) {
+        return NextResponse.json({ error: 'Content edits require exactly one id' }, { status: 400 })
+      }
+      if (typeof idea_topic !== 'undefined') update.idea_topic = idea_topic ?? null
+      if (typeof idea_eq !== 'undefined') update.idea_eq = idea_eq ?? null
+      if (typeof idea_takeaway !== 'undefined') update.idea_takeaway = idea_takeaway ?? null
+    }
+
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
     }
 
     const admin = createAdminClient()
     const { error } = await admin
       .from('ideas')
-      .update({ status })
+      .update(update)
       .in('id', ids)
 
     if (error) {
-      return NextResponse.json({ error: 'Failed to update statuses' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to update ideas' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })

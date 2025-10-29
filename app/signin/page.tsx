@@ -13,9 +13,9 @@ const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
 export default function Signin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
   const supabase = createClient();
   const router = useRouter();
 
@@ -45,6 +45,7 @@ export default function Signin() {
         setError(signInError.message);
         return;
       }
+      console.log(data?.user)
       if (data?.user) {
         router.replace("/dashboard");
       }

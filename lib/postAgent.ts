@@ -8,8 +8,9 @@ type PostDraft = {
 }
 
 type PostResponse = {
-  post_drafts: PostDraft[]
-  meta_summary: string
+  template_used: string
+  hook: string
+  post: string
 }
 
 function getAdmin() {
@@ -54,12 +55,14 @@ function buildPostPrompt(idea_topic: string, idea_summary: string, idea_eq: stri
     '# 🧱 Post Curator (Builder Tone, Founder Voice)',
     '',
     '## 🎯 Objective',
-    'Turn **`post_ideas`** (and optionally their RAG insights + hooks) into **4 polished, LinkedIn-ready drafts (160–180 words each)**.',
-    'Each draft should sound like a founder writing in public — **structured, specific, but human.**',
+    'Turn **`post_idea`** (and optionally RAG insights + hook) into **1 polished, LinkedIn-ready draft (160–180 words)**.',
+    'The draft should sound like a founder writing in public — **structured, specific, but human.**',
     '',
     '---',
     '',
-    '## 🧩 Templates Explained',
+    '## 🧩 Template Selection',
+    '',
+    'Pick the **single most fitting template** from these options:',
     '',
     '### 1. **Contrarian Hot Take**',
     'Open with a sharp or unpopular opinion. Explain what most people miss.',
@@ -114,56 +117,39 @@ function buildPostPrompt(idea_topic: string, idea_summary: string, idea_eq: stri
     '',
     '## 🧠 Analysis Rules',
     '',
-    '### 🎣 Hooks',
-    'Across the 4 drafts:',
-    '- Ensure **hook variety:**',
-    '  1 stat/result → 1 imperative → 1 question/list → 1 contrarian/timeline',
-    '- Use hook text from the Hook Strategist output if available; else regenerate naturally.',
-    '',
-    '### 📈 Content Mix',
-    'Maintain a **60/20/20 ratio**:',
-    '- 2 tactical (workflow / playbook / case study)',
-    '- 1 contrarian',
-    '- 1 story / personal / ops',
-    '',
-    '### 💡 Topics',
-    'Across 4 drafts, cover at least 3 of:',
-    '- creative strategy or testing',
-    '- AI workflows',
-    '- metrics / measurement',
-    '- scaling playbooks',
-    '- agency ops',
+    '### 🎣 Hook',
+    '- Use hook text from the Hook Strategist output if available; else derive naturally.',
+    '- Hook should be 1 sentence, scroll-stopping, and clear.',
     '',
     '### ✍️ Writing Style',
     '- Short paragraphs (1–3 lines each).',
-    '- Use **→** or bullets for clarity in 2–3 drafts.',
+    '- Use **→** or bullets for clarity if it fits naturally.',
     '- Second-person voice ("you", "your") for connection.',
     '- First-person authority ("i", "we") for credibility.',
-    '- 1–2 **ALLCAPS** words per post for emphasis (not gimmick).',
-    '- End each post with a **clean CTA**: comment, DM, share, or grounded opinion.',
+    '- 1–2 **ALLCAPS** words for emphasis (not gimmick).',
+    '- End with a **clean CTA**: comment, DM, share, or grounded opinion.',
     '',
     '---',
     '',
     '## 🧱 Requirements',
     '',
     '### 🧩 Logic',
-    '1. For each `post_idea`, pick the **single most fitting template** (state it in `template_used`).',
-    '2. Before writing, **justify the fit** — why this template best delivers that idea\'s value.',
-    '3. Use **Hook Strategist output** if available — else derive a natural hook.',
+    '1. **Pick the best template** for this idea (state it in `template_used`).',
+    '2. **Justify the fit** — why this template delivers the idea\'s value.',
+    '3. Use **Hook Strategist output** if available — else derive naturally.',
     '4. Write **naturally**, not mechanically — no template headers or robotic transitions.',
     '5. Embed **RAG insights conversationally** (facts, frameworks, or examples).',
-    '6. Apply **analysis rules** strictly for hook diversity, topic coverage, and writing style.',
-    '7. Each post should feel **distinct** in rhythm, pacing, and structure.',
+    '6. Ensure the post feels **authentic** and **specific** — no generic AI phrasing.',
     '',
     '### ⚙️ Hard Rules',
-    '- Exactly **4 drafts**, each **160–180 words**.',
-    '- Each draft must use a **different template** and **different hook type**.',
+    '- Exactly **1 draft**, **160–180 words**.',
+    '- Must use **one of the 10 templates** above.',
     '- Output must include:',
-    '  - `template_used`',
-    '  - `hook`',
-    '  - `post`',
+    '  - `template_used` (template name)',
+    '  - `hook` (1–2 sentence opening)',
+    '  - `post` (160–180 word body)',
     '- **No emojis. No hashtags. No filler.**',
-    '- Tone must stay **human, reflective, and specific** — avoid generic AI-smooth phrasing.',
+    '- Tone must stay **human, reflective, and specific** — avoid generic AI phrasing.',
     '',
     '---',
     '',
@@ -171,14 +157,9 @@ function buildPostPrompt(idea_topic: string, idea_summary: string, idea_eq: stri
     '',
     '```json',
     '{',
-    '  "post_drafts": [',
-    '    {',
-    '      "template_used": "string (name of the chosen template)",',
-    '      "hook": "string (1–2 sentence opening line used in post)",',
-    '      "post": "string (160–180 word LinkedIn-ready draft in builder tone)"',
-    '    }',
-    '  ],',
-    '  "meta_summary": "string (1–2 lines summarizing how templates, tone, and hooks were distributed for variety and conversion balance)"',
+    '  "template_used": "string (name of the chosen template)",',
+    '  "hook": "string (1–2 sentence opening line)",',
+    '  "post": "string (160–180 word LinkedIn-ready draft in builder tone)"',
     '}',
     '```',
     '',
@@ -244,7 +225,7 @@ export async function generatePostFromHookAndInsight(ideaId: number, insightId: 
     }
     
     const parsed: PostResponse = JSON.parse(cleanResponse)
-    const firstPost = parsed.post_drafts[0]?.post || 'No post generated'
+    const firstPost = parsed.post || 'No post generated'
     
     const { error: updErr } = await db
       .from('posts')
@@ -260,14 +241,9 @@ export async function generatePostFromHookAndInsight(ideaId: number, insightId: 
     // Enhanced fallback with retry
     const retryPrompt = `Return ONLY valid JSON in this exact format:
 {
-  "post_drafts": [
-    {
-      "template_used": "template name",
-      "hook": "hook text",
-      "post": "post content"
-    }
-  ],
-  "meta_summary": "brief summary"
+  "template_used": "template name",
+  "hook": "hook text",
+  "post": "post content"
 }
 
 Do not include any markdown, explanations, or additional text.`
@@ -278,7 +254,7 @@ Do not include any markdown, explanations, or additional text.`
       
       if (isValidJSON(retryCleaned)) {
         const retryParsed: PostResponse = JSON.parse(retryCleaned)
-        const firstPost = retryParsed.post_drafts[0]?.post || 'No post generated'
+        const firstPost = retryParsed.post || 'No post generated'
         
         const { error: updErr } = await db
           .from('posts')

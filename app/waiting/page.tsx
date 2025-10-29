@@ -23,6 +23,17 @@ export default function WaitingPage() {
           return;
         }
 
+        // If admin, bypass waiting and go to admin area
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        if (profile?.role === 'admin') {
+          router.replace('/admin/feedbacks');
+          return;
+        }
+
         // Check if user is now ready
         const response = await fetch('/api/user-readiness', {
           headers: {

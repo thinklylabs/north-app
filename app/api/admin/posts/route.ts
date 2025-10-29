@@ -31,20 +31,41 @@ export async function GET(request: NextRequest) {
     const searchParams = new URL(request.url).searchParams
     const owner = searchParams.get('owner')
 
-    let query = admin
+    // Fetch posts (optionally filter by owner)
+    let postsQuery = admin
       .from('posts')
       .select('id, post_hook, post_content, created_at, status, user_id')
       .order('created_at', { ascending: false })
-      .limit(500)
+      .limit(1000)
 
     if (owner) {
-      query = query.eq('user_id', owner)
+      postsQuery = postsQuery.eq('user_id', owner)
     }
 
-    const { data: posts, error: postsError } = await query
+    const { data: posts, error: postsError } = await postsQuery
 
     if (postsError) {
       return NextResponse.json({ error: 'Failed to load posts' }, { status: 500 })
+    }
+
+    // Aggregate feedback counts for the fetched posts
+    const postIds = Array.from(new Set((posts || []).map((p: any) => p.id)))
+    const postAgg = new Map<number, { count: number, last: string }>()
+    if (postIds.length > 0) {
+      const orClause = `post_id.in.(${postIds.join(',')}),and(feedback_for.eq.post,target_id.in.(${postIds.join(',')}))`
+      const { data: fbRows } = await admin
+        .from('feedbacks')
+        .select('post_id,target_id,created_at')
+        .or(orClause)
+        .limit(20000)
+      for (const r of (fbRows || [])) {
+        const id = (r as any).post_id ?? (r as any).target_id
+        if (!id) continue
+        const created = (r as any).created_at as string
+        const cur = postAgg.get(id)
+        if (!cur) postAgg.set(id, { count: 1, last: created })
+        else postAgg.set(id, { count: cur.count + 1, last: (new Date(created) > new Date(cur.last)) ? created : cur.last })
+      }
     }
 
     const userIds = Array.from(new Set((posts || []).map(p => p.user_id).filter(Boolean)))
@@ -66,6 +87,8 @@ export async function GET(request: NextRequest) {
     const merged = (posts || []).map(p => ({
       ...p,
       owner: profilesById[(p as any).user_id as string] || null,
+      feedback_count: postAgg.get((p as any).id)?.count || 0,
+      last_feedback_at: postAgg.get((p as any).id)?.last || (p as any).created_at,
     }))
 
     // Build full owners list independent of filter
@@ -100,19 +123,43 @@ export async function PATCH(request: NextRequest) {
     const gate = await requireAdmin()
     if (!gate.ok) return NextResponse.json(gate.body, { status: gate.status })
 
-    const { ids, status } = await request.json()
-    if (!Array.isArray(ids) || ids.length === 0 || typeof status !== 'string' || !STATUS_OPTIONS.has(status)) {
+    const payload = await request.json()
+    const { ids, status, post_hook, post_content } = payload || {}
+
+    if (!Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
+    }
+
+    const update: Record<string, any> = {}
+
+    if (typeof status !== 'undefined') {
+      if (typeof status !== 'string' || !STATUS_OPTIONS.has(status)) {
+        return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+      }
+      update.status = status
+    }
+
+    const wantsContentEdit = typeof post_hook !== 'undefined' || typeof post_content !== 'undefined'
+    if (wantsContentEdit) {
+      if (ids.length !== 1) {
+        return NextResponse.json({ error: 'Content edits require exactly one id' }, { status: 400 })
+      }
+      if (typeof post_hook !== 'undefined') update.post_hook = post_hook ?? null
+      if (typeof post_content !== 'undefined') update.post_content = post_content ?? null
+    }
+
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
     }
 
     const admin = createAdminClient()
     const { error } = await admin
       .from('posts')
-      .update({ status })
+      .update(update)
       .in('id', ids)
 
     if (error) {
-      return NextResponse.json({ error: 'Failed to update statuses' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to update posts' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })

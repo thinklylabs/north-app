@@ -163,7 +163,7 @@ async function callOpenAIExtract(system: string, user: string): Promise<Extracte
   }
 }
 
-export async function generateIdeaForRawId(rawId: number): Promise<{ inserted: boolean; ideaIds?: number[]; skippedDuplicates?: number }> {
+export async function generateIdeaForRawId(rawId: number, isFromCron?: boolean): Promise<{ inserted: boolean; ideaIds?: number[]; skippedDuplicates?: number }> {
   const supabase = getAdminClient()
 
   const { data: raw, error: rawErr } = await supabase
@@ -252,7 +252,7 @@ export async function generateIdeaForRawId(rawId: number): Promise<{ inserted: b
       if (inserted?.id) {
         await generateInsightForIdeaId(inserted.id)
         const { runHookAndPostPipelineForIdea } = await import('@/lib/pipeline')
-        await runHookAndPostPipelineForIdea(inserted.id)
+        await runHookAndPostPipelineForIdea(inserted.id, isFromCron)
       }
     } catch (e) {
       console.error('Failed downstream pipeline for idea', inserted?.id, e)

@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { postId, imageData } = await req.json();
-    
+
     if (!postId) {
       return NextResponse.json({ error: "Post ID is required" }, { status: 400 });
     }
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     // Get post content
     const { data: post, error: postError } = await supabase
       .from('posts')
-      .select('post_hook, post_content, user_id')
+      .select('id, post_hook, post_content, user_id')
       .eq('id', postId)
       .eq('user_id', user.id)
       .single();
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     // Unipile API call
     const baseUrl = (process.env.UNIPILE_DSN || "").replace(/\/$/, "");
     const apiToken = process.env.UNIPILE_TOKEN;
-    
+
     if (!baseUrl || !apiToken) {
       return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
     }
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     if (imageData) {
       try {
         let imageUrl = null;
-        
+
         // First, ensure we have a public URL
         if (imageData.startsWith('http')) {
           // Already uploaded to Supabase, use the URL directly
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
             },
             body: JSON.stringify({ imageData })
           });
-          
+
           if (uploadResponse.ok) {
             const uploadResult = await uploadResponse.json();
             imageUrl = uploadResult.imageUrl;
@@ -100,23 +100,23 @@ export async function POST(req: NextRequest) {
             throw new Error("Failed to upload image to Supabase");
           }
         }
-        
+
         // Add image using media field (correct format for Unipile)
         if (imageUrl) {
           console.log("[linkedin/post] Adding image URL to post data:", imageUrl);
-          
+
           // Use media field for image attachment
           postData.media = [{
             type: "image",
             url: imageUrl
           }];
-          
+
           console.log("[linkedin/post] Added image to media field");
         }
       } catch (error) {
         console.error("[linkedin/post] Image processing error:", error);
-        return NextResponse.json({ 
-          error: `Failed to process image: ${error instanceof Error ? error.message : String(error)}` 
+        return NextResponse.json({
+          error: `Failed to process image: ${error instanceof Error ? error.message : String(error)}`
         }, { status: 500 });
       }
     }
@@ -140,8 +140,8 @@ export async function POST(req: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[linkedin/post] Unipile error response:", errorText);
-      return NextResponse.json({ 
-        error: `LinkedIn posting failed: ${response.status} ${errorText}` 
+      return NextResponse.json({
+        error: `LinkedIn posting failed: ${response.status} ${errorText}`
       }, { status: 500 });
     }
 
@@ -162,8 +162,6 @@ export async function POST(req: NextRequest) {
     // Send email notification to admin after successful LinkedIn posting
     // This is wrapped in try-catch so email failures don't affect the posting success
     try {
-      console.log('📧 Attempting to send LinkedIn post notification email...');
-      
       if (!process.env.RESEND_API_KEY) {
         throw new Error('RESEND_API_KEY not configured');
       }
@@ -176,51 +174,64 @@ export async function POST(req: NextRequest) {
         .single();
 
       const userEmail = user?.email || 'Unknown User';
-      const userName = userProfile?.first_name && userProfile?.last_name 
+      const userName = userProfile?.first_name && userProfile?.last_name
         ? `${userProfile.first_name} ${userProfile.last_name}`
         : userProfile?.first_name || user?.email || 'No Name Provided';
       const companyName = userProfile?.company_name || 'No Company';
 
-      // Truncate post content for email (first 200 characters)
-      const postContent = post.post_content || post.post_hook || 'No content';
-      const truncatedContent = postContent.length > 200 
-        ? postContent.substring(0, 200) + '...' 
+      // Get post content and hook for email
+      const postContent = post.post_content || 'No content available';
+      const postHook = post.post_hook || 'No hook available';
+      const truncatedContent = postContent.length > 300
+        ? postContent.substring(0, 300) + '...'
         : postContent;
 
       const emailPayload = {
-        from: 'LinkedIn Bot <onboarding@resend.dev>',
+        from: `North Update <${process.env.ADMIN_EMAIL}>`,
         to: 'ansh.shetty.22@gmail.com',
-        subject: `🚀 New LinkedIn Post Published - ${userName}`,
+        subject: ` ${userName} posted on LinkedIn!`,
         html: `
-          <h2>🚀 New LinkedIn Post Published</h2>
-          <p><strong>User:</strong> ${userName} (${userEmail})</p>
-          <p><strong>Company:</strong> ${companyName}</p>
-          <p><strong>Post ID:</strong> ${postId}</p>
-          <p><strong>LinkedIn Account:</strong> ${linkedinUser.account_id}</p>
-          <p><strong>Post Content:</strong></p>
-          <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #0077b5;">
-            ${truncatedContent.replace(/\n/g, '<br>')}
-          </div>
-          ${imageData ? '<p><strong>📷 Post includes an image</strong></p>' : ''}
-          <p><strong>Unipile Response:</strong></p>
-          <div style="background-color: #e8f5e8; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px;">
-            ${JSON.stringify(result, null, 2).replace(/\n/g, '<br>').replace(/ /g, '&nbsp;')}
-          </div>
-          <p><em>Posted at: ${new Date().toLocaleString()}</em></p>
-          <hr style="margin: 20px 0;">
-          <p style="font-size: 12px; color: #666;">
-            This notification was sent automatically when a user published a post to LinkedIn through the North platform.
-          </p>
-        `,
-      };
-      
-      console.log('📤 Sending LinkedIn post notification email...');
-      
-      const sendResult = await resend.emails.send(emailPayload);
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #0077b5; margin-bottom: 20px;">🚀 LinkedIn Post Published!</h2>
+            
+            <div style="background-color: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+              <p style="margin: 0 0 8px 0;"><strong>User:</strong> ${userName}</p>
+              <p style="margin: 0 0 8px 0;"><strong>Email:</strong> ${userEmail}</p>
+              <p style="margin: 0 0 8px 0;"><strong>Company:</strong> ${companyName}</p>
+              <p style="margin: 0;"><strong>Post ID:</strong> ${post.id}</p>
+            </div>
 
-      console.log('✅ LinkedIn post notification email sent successfully:', sendResult);
+            <div style="background-color: #fff3cd; padding: 12px; border-radius: 6px; margin: 16px 0; border-left: 4px solid #ffc107;">
+              <p style="margin: 0 0 8px 0; color: #856404; font-weight: 600;">Post Hook:</p>
+              <p style="margin: 0; color: #856404; font-style: italic;">${postHook}</p>
+            </div>
+
+            <p style="margin-bottom: 8px;"><strong>Full Post Content:</strong></p>
+            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #0077b5; line-height: 1.5;">
+              ${truncatedContent.replace(/\n/g, '<br>')}
+            </div>
+
+            <div style="background-color: #d1ecf1; padding: 12px; border-radius: 6px; margin: 16px 0;">
+              <p style="margin: 0; color: #0c5460; font-size: 14px;">
+                <strong>Status:</strong> Successfully published to LinkedIn ✅
+              </p>
+            </div>
+
+            <p style="margin: 16px 0; color: #666; font-size: 13px;"><em>Posted: ${new Date().toLocaleString()}</em></p>
+            
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="font-size: 12px; color: #666; margin: 0;">
+              This notification was sent because ${userName} successfully posted content to LinkedIn using North.
+            </p>
+            <p style="font-size: 11px; color: #999; margin: 8px 0 0 0;">
+              Please do not reply to this email. Use the North platform to manage content.
+            </p>
+          </div>
+        `,
+      }
+      const sendResult = await resend.emails.send(emailPayload);
     } catch (emailError: any) {
-      console.error('❌ LinkedIn post notification email failed to send:', emailError);
+      console.error('LinkedIn post notification email failed:', emailError.message);
       // Don't fail the request - LinkedIn posting was still successful
     }
 

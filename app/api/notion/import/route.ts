@@ -201,7 +201,7 @@ export async function POST(req: NextRequest) {
     // Generate idea (best-effort)
     try {
       const { generateIdeaForRawId } = await import('@/lib/ideas')
-      await generateIdeaForRawId(insertedRaw.id)
+      await generateIdeaForRawId(insertedRaw.id, true)
     } catch (e) {
       console.error('Failed to generate idea for Notion raw document', e)
     }

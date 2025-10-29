@@ -121,12 +121,6 @@ export default function DashboardPage() {
       if (result.text && result.text.trim()) {
         setTranscript(result.text);
         console.log('Transcript set successfully:', result.text);
-        // Auto-save the transcribed content
-        try {
-          await saveMessage(result.text);
-        } catch (e) {
-          console.error('Failed to save transcribed message:', e);
-        }
       } else {
         console.warn('Empty transcription result');
         alert('No speech was detected. Please try speaking more clearly.');

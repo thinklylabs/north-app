@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
     // Generate ideas from the content
     try {
       const { generateIdeaForRawId } = await import('@/lib/ideas')
-      await generateIdeaForRawId(rawContent.id)
+      await generateIdeaForRawId(rawContent.id, true)
       console.log(`Generated ideas for raw content ${rawContent.id}`)
     } catch (error) {
       console.error('Failed to generate ideas:', error)

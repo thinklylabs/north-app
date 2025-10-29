@@ -24,6 +24,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isLinkedConnected, setIsLinkedConnected] = useState(false);
+  const [linkedInProfile, setLinkedInProfile] = useState<{ full_name?: string; profile_picture_url?: string } | null>(null);
   const [profileData, setProfileData] = useState({
     first_name: "",
     last_name: "",
@@ -43,6 +45,8 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchUserProfile();
+    checkLinkedInConnection();
+
   }, []);
 
   const fetchUserProfile = async () => {
@@ -70,6 +74,37 @@ export default function SettingsPage() {
       console.error("Error fetching user profile:", error);
     }
   };
+
+  async function checkLinkedInConnection() {
+  try {
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    if (!authUser) return;
+
+    const { data, error } = await supabase
+      .from("linkedin_accounts")
+      .select("full_name, profile_picture_url")
+      .eq("user_id", authUser.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error checking LinkedIn connection:", error);
+      return;
+    }
+
+    if (data) {
+      setIsLinkedConnected(true);
+      setLinkedInProfile(data);
+    } else {
+      setIsLinkedConnected(false);
+      setLinkedInProfile(null);
+    }
+  } catch (err) {
+    console.error("Error fetching LinkedIn connection:", err);
+  }
+}
 
   const handleProfileUpdate = async () => {
     if (!user) return;

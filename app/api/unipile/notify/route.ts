@@ -52,28 +52,56 @@ async function fetchUserProfileByAccountId(accountId: string) {
   return text ? JSON.parse(text) : null;
 }
 
+export async function GET(req: NextRequest) {
+  console.log("🔍 [unipile/notify] GET request - webhook health check");
+  return NextResponse.json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    message: "Webhook endpoint is reachable"
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
+    console.log("🚀 [unipile/notify] Webhook received");
+
     const supa = getAdmin();
     const body = await req.json().catch(() => ({}));
+
+    console.log("📝 [unipile/notify] Webhook payload:", {
+      status: body?.status,
+      account_id: body?.account_id,
+      hasName: !!body?.name,
+      provider: body?.provider,
+      userId: body?.name?.substring(0, 8) + "..." || "none",
+      fullBody: body
+    });
+
     // Expected example payload: { status: "CREATION_SUCCESS", account_id: "...", name: "<auth-user-id>" }
     const status = body?.status as string | undefined;
     const accountId = body?.account_id as string | undefined;
     const userId = (body?.name as string | undefined) || null;
 
     if (!status || !accountId) {
+      console.log("❌ [unipile/notify] Missing required fields:", { status, accountId });
       return NextResponse.json({ ok: false, reason: "missing fields" }, { status: 400 });
     }
 
     // Only act on successful creation
     if (status !== "CREATION_SUCCESS") {
+      console.log("ℹ️ [unipile/notify] Ignoring non-success status:", status);
       return NextResponse.json({ ok: true, ignored: true });
     }
 
+    console.log("✅ [unipile/notify] Processing CREATION_SUCCESS for account:", accountId);
+
     // 1) Fetch accounts and find this account
-    console.log("[unipile/notify] incoming payload", { status, accountId, hasName: !!userId });
+    console.log("🔍 [unipile/notify] Fetching accounts from Unipile");
     const accounts = await fetchAccounts();
-    console.log("[unipile/notify] fetched accounts");
+    console.log("📋 [unipile/notify] Accounts fetched:", {
+      hasAccounts: !!accounts,
+      itemsCount: accounts?.items?.length || 0
+    });
     const account = Array.isArray(accounts?.items)
       ? accounts.items.find((a: any) => a?.id === accountId)
       : undefined;

@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
       try {
         const { generateIdeaForRawId } = await import('@/lib/ideas')
         for (const row of inserted || []) {
-          await generateIdeaForRawId(row.id)
+          await generateIdeaForRawId(row.id, true)
         }
       } catch (e) {
         console.error('Failed to generate ideas for some Slack raw documents', e)

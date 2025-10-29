@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
     try {
       const { generateIdeaForRawId } = await import('@/lib/ideas')
       for (const row of inserted || []) {
-        await generateIdeaForRawId(row.id)
+        await generateIdeaForRawId(row.id, true)
       }
     } catch (e) {
       console.error('Failed to generate ideas for some tl;dv raw documents', e)

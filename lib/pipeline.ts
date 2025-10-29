@@ -21,12 +21,12 @@ async function getLatestInsightIdForIdea(ideaId: number): Promise<number | null>
   return data?.[0]?.id ?? null
 }
 
-export async function runHookAndPostPipelineForIdea(ideaId: number): Promise<{ postId?: number }> {
+export async function runHookAndPostPipelineForIdea(ideaId: number, isFromCron?: boolean): Promise<{ postId?: number }> {
   const insightId = await getLatestInsightIdForIdea(ideaId)
   if (!insightId) return {}
 
-  const { postId } = await generateHookForIdea(ideaId)
-  await generatePostFromHookAndInsight(ideaId, insightId, postId)
+  const { postId } = await generateHookForIdea(ideaId, isFromCron)
+  await generatePostFromHookAndInsight(ideaId, insightId, postId, isFromCron)
   return { postId }
 }
 

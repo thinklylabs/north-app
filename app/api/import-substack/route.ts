@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
           }
           try {
             const { generateIdeaForRawId } = await import('@/lib/ideas')
-            await generateIdeaForRawId(insertedRaw.id)
+            await generateIdeaForRawId(insertedRaw.id, true)
           } catch (e) {
             console.error('Failed to generate idea for substack raw document', e)
           }

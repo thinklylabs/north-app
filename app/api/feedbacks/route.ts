@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+
 
 function getSupabaseForUser(accessToken: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -270,6 +275,168 @@ export async function POST(req: NextRequest) {
 
     if (insertErr) {
       return NextResponse.json({ error: insertErr.message }, { status: 400 })
+    }
+
+    // Send email notification after successful feedback submission
+    // This is wrapped in try-catch so email failures don't affect feedback saving
+    try {
+
+      console.log("Feedback added. Sending email notification...")
+      if (!process.env.RESEND_API_KEY) {
+        throw new Error('RESEND_API_KEY not configured')
+      }
+
+      let feedbackAuthorEmail = user?.email || 'North User'
+      // const feedbackAuthorName = user?.user_metadata?.name || user?.email || 'No Name Provided'
+
+      // Determine who should receive the email and get target details
+      let recipientEmail = process.env.ADMIN_EMAIL || 'vedant@thinklylabs.com'
+      let recipientName = 'North Admin'
+      let targetDetails = ''
+
+      if (authorRole === 'admin') {
+        // Admin is giving feedback - send to the owner of the post/idea
+        feedbackAuthorEmail = process.env.ADMIN_EMAIL || 'vedant@thinklylabs.com'
+        if (feedback_for === 'idea' && ideaIdNormalized) {
+          // Use admin client to bypass RLS when admin is giving feedback
+          const adminClient = createAdminClient()
+          const { data: idea } = await adminClient
+            .from('ideas')
+            .select('idea_topic, user_id')
+            .eq('id', ideaIdNormalized)
+            .single()
+
+          if (idea) {
+            // Get the owner's profile
+            const { data: ownerProfile } = await supabase
+              .from('profiles')
+              .select('email, first_name, last_name')
+              .eq('id', idea.user_id)
+              .single()
+
+            if (ownerProfile) {
+              recipientEmail = ownerProfile.email
+              recipientName = ownerProfile.first_name && ownerProfile.last_name
+                ? `${ownerProfile.first_name} ${ownerProfile.last_name}`
+                : ownerProfile.first_name || ownerProfile.email || 'Unknown User'
+            } else {
+              // Try with admin client to bypass RLS
+              const adminClient = createAdminClient()
+              const { data: adminProfile } = await adminClient
+                .from('profiles')
+                .select('email, first_name, last_name')
+                .eq('id', idea.user_id)
+                .single()
+
+              if (adminProfile) {
+                recipientEmail = adminProfile.email
+                recipientName = adminProfile.first_name && adminProfile.last_name
+                  ? `${adminProfile.first_name} ${adminProfile.last_name}`
+                  : adminProfile.first_name || adminProfile.email || 'Unknown User'
+              }
+            }
+          } else {
+            throw new Error(`Idea ID ${ideaIdNormalized} not found - cannot send notification email`)
+          }
+          targetDetails = idea?.idea_topic ? `Idea: "${idea.idea_topic}"` : `Idea ID: ${ideaIdNormalized}`
+        } else if (feedback_for === 'post' && postIdNormalized) {
+          // Use admin client to bypass RLS when admin is giving feedback
+          const adminClient = createAdminClient()
+          const { data: post } = await adminClient
+            .from('posts')
+            .select('user_id')
+            .eq('id', postIdNormalized)
+            .single()
+
+          if (post) {
+            // Get the owner's profile
+            const { data: ownerProfile } = await supabase
+              .from('profiles')
+              .select('email, first_name, last_name')
+              .eq('id', post.user_id)
+              .single()
+
+            if (ownerProfile) {
+              recipientEmail = ownerProfile.email
+              recipientName = ownerProfile.first_name && ownerProfile.last_name
+                ? `${ownerProfile.first_name} ${ownerProfile.last_name}`
+                : ownerProfile.first_name || ownerProfile.email || 'Unknown User'
+            } else {
+              // Try with admin client to bypass RLS
+              const adminClient = createAdminClient()
+              const { data: adminProfile } = await adminClient
+                .from('profiles')
+                .select('email, first_name, last_name')
+                .eq('id', post.user_id)
+                .single()
+
+              if (adminProfile) {
+                recipientEmail = adminProfile.email
+                recipientName = adminProfile.first_name && adminProfile.last_name
+                  ? `${adminProfile.first_name} ${adminProfile.last_name}`
+                  : adminProfile.first_name || adminProfile.email || 'Unknown User'
+              }
+            }
+          } else {
+            throw new Error(`Post ID ${postIdNormalized} not found - cannot send notification email`)
+          }
+          targetDetails = `Post ID: ${postIdNormalized}`
+        } else {
+          targetDetails = `${feedback_for} ID: ${target_id}`
+        }
+      } else {
+        // User is giving feedback - send to admin (existing behavior)
+        if (feedback_for === 'idea' && ideaIdNormalized) {
+          const { data: idea } = await supabase
+            .from('ideas')
+            .select('idea_topic')
+            .eq('id', ideaIdNormalized)
+            .single()
+          targetDetails = idea?.idea_topic ? `Idea: "${idea.idea_topic}"` : `Idea ID: ${ideaIdNormalized}`
+        } else if (feedback_for === 'post' && postIdNormalized) {
+          targetDetails = `Post ID: ${postIdNormalized}`
+        } else {
+          targetDetails = `${feedback_for} ID: ${target_id}`
+        }
+      }
+
+      const isAdminFeedback = authorRole === 'admin'
+
+      const sendResult = await resend.emails.send({
+        from: 'North Feedback Update <onboarding@resend.dev>',
+        to: recipientEmail,
+        subject: `${isAdminFeedback ? 'Admin Feedback on Your' : 'New User Feedback on'} ${feedback_for.charAt(0).toUpperCase() + feedback_for.slice(1)}`,
+        html: `
+          <h2>${isAdminFeedback ? '📝 Admin Feedback Received' : '💬 New User Feedback'}</h2>
+          ${isAdminFeedback ? `<p>Hi ${recipientName},</p><p>An admin has provided feedback on your ${feedback_for}:</p>` : ''}
+          <p><strong>Feedback by:</strong> North ${authorRole === 'admin' ? 'Admin' : 'User'} ${ authorRole === 'admin' ? '' : feedbackAuthorEmail}</p>
+          <p><strong>Here's what they said:</strong></p>
+          <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid ${isAdminFeedback ? '#0077b5' : '#1DC6A1'};">
+            ${feedback.replace(/\n/g, '<br>')}
+          </div>
+          <p><em>Submitted at: ${new Date().toLocaleString()}</em></p>
+          <hr style="margin: 20px 0;">
+          <p style="font-size: 12px; color: #666;">
+            ${isAdminFeedback
+            ? 'This feedback was provided by an admin to help improve your content. You can view and respond to this feedback in your North dashboard.'
+            : 'This notification was sent because a user provided feedback on content on North.'
+          }
+          </p>
+          <p style="font-size: 11px; color: #999;">
+            Please do not reply to this email as it is not monitored. Use the North platform to respond to feedback.
+          </p>
+        `,
+      })
+
+      if(sendResult){
+        console.log(`Email sent successfully BY ${authorRole}`)
+        console.log(`Email sent successfully TO ${authorRole === "admin" ? "USER" : "ADMIN"} ${recipientEmail}`)
+
+      }
+
+    } catch (emailError: any) {
+      console.error('Email notification failed:', emailError.message)
+      // Don't fail the request - feedback was still saved successfully
     }
 
     return NextResponse.json({ message: 'Feedback submitted' })

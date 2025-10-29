@@ -396,7 +396,7 @@ export async function POST(req: NextRequest) {
       const isAdminFeedback = authorRole === 'admin'
 
       const sendResult = await resend.emails.send({
-        from: 'North Feedback Update <onboarding@resend.dev>',
+        from: `North Feedback Update <${process.env.ADMIN_EMAIL}>`,
         to: recipientEmail,
         subject: `${isAdminFeedback ? 'Admin Feedback on Your' : 'New User Feedback on'} ${feedback_for.charAt(0).toUpperCase() + feedback_for.slice(1)}`,
         html: `

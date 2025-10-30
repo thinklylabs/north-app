@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -40,6 +41,7 @@ export default function PostsPage() {
     id: number;
     authorUserId: string;
     authorRole: 'user' | 'admin';
+    authorName: string;
     body: string;
     createdAt: string;
   }[]>([]);
@@ -613,12 +615,25 @@ export default function PostsPage() {
                   ✕
                 </button>
               </div>
-              {insightForThread ? (
-                <div className="px-5 pt-2 text-[10px] text-[#6F7777]">
-                  <div className="font-medium text-[#0D1717] mb-1">Insight</div>
-                  <pre className="text-[10px] whitespace-pre-wrap bg-[#F6F2EC] text-[#0D1717] rounded-[6px] p-2 max-h-[80px] overflow-auto">{JSON.stringify(insightForThread.insight, null, 2)}</pre>
-                </div>
-              ) : null}
+              {/* INSIGHT SECTION */}
+              {selectedRow && (
+                <>
+                  {loadingFeedback ? (
+                    <div className="px-5 pt-2">
+                      <div className="font-medium text-[#0D1717] mb-1 text-[10px]">Insight</div>
+                      <div>
+                        <Skeleton className="h-3 w-2/3 rounded bg-[#EDE8E1] animate-pulse mb-2" />
+                        <Skeleton className="h-3 w-1/2 rounded bg-[#EDE8E1] animate-pulse" />
+                      </div>
+                    </div>
+                  ) : insightForThread ? (
+                    <div className="px-5 pt-2 text-[10px] text-[#6F7777]">
+                      <div className="font-medium text-[#0D1717] mb-1">Insight</div>
+                      <pre className="text-[10px] whitespace-pre-wrap bg-[#F6F2EC] text-[#0D1717] rounded-[6px] p-2 max-h-[80px] overflow-auto">{JSON.stringify(insightForThread.insight, null, 2)}</pre>
+                    </div>
+                  ) : null}
+                </>
+              )}
               {/* Content */}
               <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -650,7 +665,7 @@ export default function PostsPage() {
                         {feedbackMessages.map(m => (
                           <div key={m.id} className="text-[12px]">
                             <div className="flex items-center gap-2">
-                              <span className={`inline-flex items-center rounded-[6px] px-1.5 py-[1px] text-[10px] ${m.authorRole === 'admin' ? 'bg-[#E5EDFF] text-[#1E40AF]' : 'bg-[#EDE8E1] text-[#6F7777]'}`}>{m.authorRole}</span>
+                              <span className={`inline-flex items-center rounded-[6px] px-1.5 py-[1px] text-[10px] ${m.authorRole === 'admin' ? 'bg-[#E5EDFF] text-[#1E40AF]' : 'bg-[#EDE8E1] text-[#6F7777]'}`}>{m.authorRole === 'admin' ? 'admin' : m.authorName}</span>
                               <span className="text-[#6F7777] text-[10px]">{new Date(m.createdAt).toLocaleString()}</span>
                             </div>
                             <div className="mt-1 text-[#0D1717] whitespace-pre-wrap">{m.body}</div>

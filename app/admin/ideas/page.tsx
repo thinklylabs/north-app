@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
 
@@ -660,7 +661,15 @@ export default function AdminIdeasPage() {
                 
                 {/* Scrollable content area */}
                 <div className="flex-1 overflow-y-auto">
-                  {insightForIdea ? (
+                  {loadingThread ? (
+                    <div className="px-5 pt-2">
+                      <div className="font-medium text-[#0D1717] mb-1 text-[11px]">Insight</div>
+                      <div>
+                        <Skeleton className="h-3 w-2/3 rounded bg-[#EDE8E1] animate-pulse mb-2" />
+                        <Skeleton className="h-3 w-1/2 rounded bg-[#EDE8E1] animate-pulse" />
+                      </div>
+                    </div>
+                  ) : insightForIdea ? (
                     <div className="px-5 pt-2 text-[11px] text-[#6F7777]">
                       <div className="font-medium text-[#0D1717] mb-1">Insight</div>
                       <pre className="text-[11px] whitespace-pre-wrap bg-[#F6F2EC] text-[#0D1717] rounded-[8px] p-2 max-h-[160px] overflow-auto">{JSON.stringify(insightForIdea.insight, null, 2)}</pre>

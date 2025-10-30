@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
 
@@ -655,12 +656,25 @@ export default function AdminPostsPage() {
                   ✕
                 </button>
               </div>
-              {insightForThread ? (
-                <div className="px-5 pt-2 text-[10px] text-[#6F7777]">
-                  <div className="font-medium text-[#0D1717] mb-1">Insight</div>
-                  <pre className="text-[10px] whitespace-pre-wrap bg-[#F6F2EC] text-[#0D1717] rounded-[6px] p-2 max-h-[80px] overflow-auto">{JSON.stringify(insightForThread.insight, null, 2)}</pre>
-                </div>
-              ) : null}
+              {/* INSIGHT SECTION */}
+              {selectedRow && (
+                <>
+                  {loadingFeedback ? (
+                    <div className="px-5 pt-2">
+                      <div className="font-medium text-[#0D1717] mb-1 text-[10px]">Insight</div>
+                      <div>
+                        <Skeleton className="h-3 w-2/3 rounded bg-[#EDE8E1] animate-pulse mb-2" />
+                        <Skeleton className="h-3 w-1/2 rounded bg-[#EDE8E1] animate-pulse" />
+                      </div>
+                    </div>
+                  ) : insightForThread ? (
+                    <div className="px-5 pt-2 text-[10px] text-[#6F7777]">
+                      <div className="font-medium text-[#0D1717] mb-1">Insight</div>
+                      <pre className="text-[10px] whitespace-pre-wrap bg-[#F6F2EC] text-[#0D1717] rounded-[6px] p-2 max-h-[80px] overflow-auto">{JSON.stringify(insightForThread.insight, null, 2)}</pre>
+                    </div>
+                  ) : null}
+                </>
+              )}
               {/* Content */}
               <div className="px-5 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>

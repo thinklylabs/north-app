@@ -167,7 +167,7 @@ export default function AdminFeedbacksPage() {
                         {thread.messages.map((m: any) => (
                           <div key={m.id} className="text-[12px]">
                             <div className="flex items-center gap-2">
-                              <span className={`inline-flex items-center rounded-[6px] px-1.5 py-[1px] text-[10px] ${m.authorRole === 'admin' ? 'bg-[#E5EDFF] text-[#1E40AF]' : 'bg-[#EDE8E1] text-[#6F7777]'}`}>{m.authorRole}</span>
+                              <span className={`inline-flex items-center rounded-[6px] px-1.5 py-[1px] text-[10px] ${m.authorRole === 'admin' ? 'bg-[#E5EDFF] text-[#1E40AF]' : 'bg-[#EDE8E1] text-[#6F7777]'}`}>{m.authorRole === 'admin' ? 'admin' : m.authorName}</span>
                               <span className="text-[#6F7777] text-[10px]">{new Date(m.createdAt).toLocaleString()}</span>
                             </div>
                             <div className="mt-1 text-[#0D1717] whitespace-pre-wrap">{m.body}</div>

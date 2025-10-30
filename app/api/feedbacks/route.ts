@@ -105,13 +105,20 @@ export async function GET(req: NextRequest) {
 
     const authorIds = Array.from(new Set((feedbackRows || []).map(r => r.user_id)))
     let authorRoles: Record<string, 'admin' | 'user'> = {}
+    let authorNames: Record<string, string> = {}
     if (authorIds.length > 0) {
       const { data: profiles } = await db
         .from('profiles')
-        .select('id, role')
+        .select('id, role, first_name, last_name')
         .in('id', authorIds as string[])
       for (const p of profiles || []) {
         authorRoles[p.id as unknown as string] = (p.role === 'admin') ? 'admin' : 'user'
+        // Create display name from first_name and last_name, fallback to email or 'Unknown User'
+        const firstName = p.first_name?.trim() || ''
+        const lastName = p.last_name?.trim() || ''
+        authorNames[p.id as unknown as string] = firstName && lastName
+          ? `${firstName} ${lastName}`
+          : firstName || lastName || 'Unknown User'
       }
     }
 
@@ -147,6 +154,7 @@ export async function GET(req: NextRequest) {
       id: r.id,
       authorUserId: r.user_id,
       authorRole: authorRoles[r.user_id] || 'user',
+      authorName: authorNames[r.user_id] || 'Unknown User',
       body: r.feedback,
       createdAt: r.created_at,
     }))

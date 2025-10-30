@@ -65,8 +65,12 @@ export async function POST(req: Request) {
       .select('*')
       .single()
 
-    if (rawInsertError) {
-      return NextResponse.json({ error: rawInsertError.message }, { status: 500 })
+    if (rawInsertError || !rawContent) {
+      console.error("Raw insert failed:", rawInsertError);
+      return NextResponse.json(
+        { error: rawInsertError?.message || 'Failed to insert raw_content' },
+        { status: 500 }
+      );
     }
 
     // Immediately process this raw document into document_sections
@@ -79,14 +83,25 @@ export async function POST(req: Request) {
     }
 
     // Generate idea for this raw document (non-blocking best-effort)
+    let ideaAndPostGenerationSuccess = false;
+    let postsCreated = 0;
     try {
       const { generateIdeaForRawId } = await import('@/lib/ideas')
-      await generateIdeaForRawId(rawContent.id)
+      const ideaResult = await generateIdeaForRawId(rawContent.id)
+
+      ideaAndPostGenerationSuccess = ideaResult?.inserted || false;
+      
+      postsCreated = ideaResult?.postsCreated || 0;
     } catch (err) {
       console.error('Failed to generate idea for thought raw document:', err)
+      // Don't fail the request, but log the issue
     }
 
-    return NextResponse.json({ message: rawContent }, { status: 201 })
+    return NextResponse.json({
+      message: rawContent,
+      ideaPostSuccess: (ideaAndPostGenerationSuccess && postsCreated),
+      status: 'saved'
+    }, { status: 201 })
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unknown error'
     return NextResponse.json({ error: message }, { status: 500 })

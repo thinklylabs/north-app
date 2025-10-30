@@ -92,7 +92,7 @@ export default function PostsPage() {
 
     return filtered.sort((a, b) => {
       let aValue, bValue;
-      
+
       if (sortField === 'created_at') {
         aValue = new Date(a.created_at).getTime();
         bValue = new Date(b.created_at).getTime();
@@ -134,7 +134,7 @@ export default function PostsPage() {
     const currentPagePosts = getFilteredAndSortedPosts().slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
     const allCurrentPageIds = new Set(currentPagePosts.map(post => post.id));
     const allSelected = currentPagePosts.every(post => selectedPosts.has(post.id));
-    
+
     if (allSelected) {
       // Deselect all on current page
       setSelectedPosts(prev => {
@@ -180,7 +180,7 @@ export default function PostsPage() {
 
   const handleBulkDelete = async () => {
     if (selectedPosts.size === 0) return;
-    
+
     const confirmed = window.confirm(`Are you sure you want to delete ${selectedPosts.size} post(s)?`);
     if (!confirmed) return;
 
@@ -190,7 +190,7 @@ export default function PostsPage() {
         .from('posts')
         .delete()
         .in('id', Array.from(selectedPosts));
-      
+
       if (error) {
         toast.error('Failed to delete posts');
         return;
@@ -207,6 +207,7 @@ export default function PostsPage() {
 
   const handleRowSetStatus = async (postId: number, newStatus: string) => {
     const supabase = createClient();
+
     try {
       const { error } = await supabase
         .from('posts')
@@ -217,6 +218,9 @@ export default function PostsPage() {
         return;
       }
       setPosts(prev => prev.map(p => p.id === postId ? { ...p, status: newStatus } : p));
+      if (selectedRow && selectedRow.id === postId) {
+        setSelectedRow(prev => prev ? { ...prev, status: newStatus } : null);
+      }
       toast.success('Status updated');
     } catch {
       toast.error('Failed to update status');
@@ -451,113 +455,113 @@ export default function PostsPage() {
                   {getFilteredAndSortedPosts()
                     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                     .map((row) => {
-                    const hook = row.post_hook || ''
-                    const content = row.post_content || ''
-                    return (
-                      <tr key={row.id} className="border-t border-[#171717]/10">
-                        <td className="px-4 py-3 align-top">
-                          <input
-                            type="checkbox"
-                            checked={selectedPosts.has(row.id)}
-                            onChange={() => handleSelectPost(row.id)}
-                            className="w-4 h-4 rounded border-[#1DC6A1] text-[#1DC6A1] focus:ring-[#1DC6A1]"
-                          />
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <div className="flex items-start justify-between gap-2">
-                            <div
-                              className="text-[12px] text-[#0D1717] truncate cursor-pointer"
-                              title={hook}
-                              onClick={() => {
-                                setSelectedRow(row);
-                                setEditHook(hook);
-                                setEditContent(content);
-                                setEditFeedback("");
-                              }}
-                            >
-                              {hook}
-                            </div>
-                            <button
-                              type="button"
-                              aria-label="Copy hook"
-                              title="Copy hook"
-                              className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                if (!hook) return;
-                                try {
-                                  await navigator.clipboard.writeText(hook);
-                                  toast.success('Copied to clipboard');
-                                } catch {
-                                  toast.error('Failed to copy');
-                                }
-                              }}
-                            >
-                              <Copy className="w-[12px] h-[12px]" />
-                            </button>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <div className="flex items-start justify-between gap-2">
-                            <div
-                              className="text-[12px] text-[#0D1717] truncate cursor-pointer"
-                              title={content}
-                              onClick={() => {
-                                setSelectedRow(row);
-                                setEditHook(hook);
-                                setEditContent(content);
-                                setEditFeedback("");
-                              }}
-                            >
-                              {content}
-                            </div>
-                            <button
-                              type="button"
-                              aria-label="Copy post"
-                              title="Copy post"
-                              className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                if (!content) return;
-                                try {
-                                  await navigator.clipboard.writeText(content);
-                                  toast.success('Copied to clipboard');
-                                } catch {
-                                  toast.error('Failed to copy');
-                                }
-                              }}
-                            >
-                              <Copy className="w-[12px] h-[12px]" />
-                            </button>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
+                      const hook = row.post_hook || ''
+                      const content = row.post_content || ''
+                      return (
+                        <tr key={row.id} className="border-t border-[#171717]/10">
+                          <td className="px-4 py-3 align-top">
+                            <input
+                              type="checkbox"
+                              checked={selectedPosts.has(row.id)}
+                              onChange={() => handleSelectPost(row.id)}
+                              className="w-4 h-4 rounded border-[#1DC6A1] text-[#1DC6A1] focus:ring-[#1DC6A1]"
+                            />
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <div className="flex items-start justify-between gap-2">
+                              <div
+                                className="text-[12px] text-[#0D1717] truncate cursor-pointer"
+                                title={hook}
+                                onClick={() => {
+                                  setSelectedRow(row);
+                                  setEditHook(hook);
+                                  setEditContent(content);
+                                  setEditFeedback("");
+                                }}
+                              >
+                                {hook}
+                              </div>
                               <button
                                 type="button"
-                                className={`inline-flex items-center rounded-[6px] px-2 py-0.5 text-[11px] cursor-pointer hover:opacity-80 transition-opacity ${getStatusStyles(row.status || 'draft')}`}
+                                aria-label="Copy hook"
+                                title="Copy hook"
+                                className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!hook) return;
+                                  try {
+                                    await navigator.clipboard.writeText(hook);
+                                    toast.success('Copied to clipboard');
+                                  } catch {
+                                    toast.error('Failed to copy');
+                                  }
+                                }}
                               >
-                                {row.status || 'draft'}
+                                <Copy className="w-[12px] h-[12px]" />
                               </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {STATUS_OPTIONS.map(opt => (
-                                <DropdownMenuItem key={opt} onClick={() => handleRowSetStatus(row.id, opt)}>
-                                  {opt}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <span className="text-[12px] text-[#0D1717]">
-                            {formatDate(row.created_at)}
-                          </span>
-                        </td>
-                      </tr>
-                    )
-                  })}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <div className="flex items-start justify-between gap-2">
+                              <div
+                                className="text-[12px] text-[#0D1717] truncate cursor-pointer"
+                                title={content}
+                                onClick={() => {
+                                  setSelectedRow(row);
+                                  setEditHook(hook);
+                                  setEditContent(content);
+                                  setEditFeedback("");
+                                }}
+                              >
+                                {content}
+                              </div>
+                              <button
+                                type="button"
+                                aria-label="Copy post"
+                                title="Copy post"
+                                className="mt-[1px] inline-flex items-center justify-center w-[22px] h-[22px] rounded-[5px] border-[#1DC6A1] text-[#1DC6A1] hover:text-[#19b391] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer flex-shrink-0"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!content) return;
+                                  try {
+                                    await navigator.clipboard.writeText(content);
+                                    toast.success('Copied to clipboard');
+                                  } catch {
+                                    toast.error('Failed to copy');
+                                  }
+                                }}
+                              >
+                                <Copy className="w-[12px] h-[12px]" />
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  type="button"
+                                  className={`inline-flex items-center rounded-[6px] px-2 py-0.5 text-[11px] cursor-pointer hover:opacity-80 transition-opacity ${getStatusStyles(row.status || 'draft')}`}
+                                >
+                                  {row.status || 'draft'}
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {STATUS_OPTIONS.map(opt => (
+                                  <DropdownMenuItem key={opt} onClick={() => handleRowSetStatus(row.id, opt)}>
+                                    {opt}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                          <td className="px-4 py-3 align-top">
+                            <span className="text-[12px] text-[#0D1717]">
+                              {formatDate(row.created_at)}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
                 </tbody>
               </table>
               {/* Pagination */}
@@ -571,7 +575,7 @@ export default function PostsPage() {
                     disabled={currentPage === 1}
                     aria-label="Previous page"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   </Button>
                   <span className="text-[11px] text-[#6F7777]">
                     Page {currentPage} of {Math.max(1, Math.ceil(getFilteredAndSortedPosts().length / itemsPerPage))}
@@ -584,7 +588,7 @@ export default function PostsPage() {
                     disabled={currentPage >= Math.ceil(posts.length / itemsPerPage)}
                     aria-label="Next page"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   </Button>
                 </div>
               </div>
@@ -603,7 +607,7 @@ export default function PostsPage() {
             >
               {/* Header */}
               <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-3 border-b border-[#171717]/10 border-[0.5px] bg-[#FCF9F5] rounded-t-[10px]">
-                <h3 className={`${oldStandard.className} text-[16px] leading-[1.3em] text-[#0D1717] font-bold`}>Post title</h3>
+                <h3 className={`${oldStandard.className} text-[16px] leading-[1.3em] text-[#0D1717] font-bold`}>Post Title</h3>
                 <button
                   type="button"
                   className="inline-flex items-center justify-center w-[24px] h-[24px] rounded-[5px] border-[#171717]/20 border-[0.5px] bg-[#FCF9F5] hover:bg-[#EDE8E1] cursor-pointer"
@@ -704,7 +708,7 @@ export default function PostsPage() {
                                 const j = await r.json();
                                 setFeedbackMessages(Array.isArray(j?.messages) ? j.messages : [])
                               }
-                            } catch {}
+                            } catch { }
                           })()
                         } catch (e: any) {
                           toast.error(e?.message || 'Failed to send feedback')
@@ -718,7 +722,7 @@ export default function PostsPage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Footer Buttons */}
               <div className="px-5 pb-5 flex flex-wrap items-center gap-2">
                 <Button
@@ -763,6 +767,33 @@ export default function PostsPage() {
                 >
                   Copy
                 </Button>
+
+                <div className="relative">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className={`h-[30px] px-5 rounded-[6px] border-[#171717]/20 border-[0.5px] text-[12px] cursor-pointer hover:opacity-80 transition-opacity ${getStatusStyles(selectedRow.status || 'draft')}`}>
+                        {posts.find(p => p.id === selectedRow.id)?.status || selectedRow.status || "draft"}
+                        <span className="text-[#1DC6A1] text-[10px]"></span>
+                      </button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent align="end" className="w-[140px]">
+                      {STATUS_OPTIONS.map((opt) => (
+                        <DropdownMenuItem
+                          key={opt}
+                          onClick={() => handleRowSetStatus(selectedRow.id, opt)}
+                          className="text-sm hover:bg-[#E6F9F4] cursor-pointer"
+                        >
+                          {opt}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+
                 <Button
                   type="button"
                   className="h-[30px] px-3 rounded-[6px] bg-[#0077B5] text-white hover:bg-[#005885] text-[12px] cursor-pointer flex items-center gap-2"
@@ -770,9 +801,9 @@ export default function PostsPage() {
                   onClick={() => setShowLinkedInConfirm(true)}
                 >
                   {!postingToLinkedIn && (
-                    <img 
-                      src="/linkedin.svg" 
-                      alt="LinkedIn" 
+                    <img
+                      src="/linkedin.svg"
+                      alt="LinkedIn"
                       className="w-3 h-3 filter brightness-0 invert"
                     />
                   )}
@@ -804,12 +835,12 @@ export default function PostsPage() {
                   ✕
                 </button>
               </div>
-              
+
               <div className="px-5 py-4">
                 <p className="text-[14px] text-[#0D1717] mb-4">
                   Are you sure you want to post this directly to LinkedIn? This will publish the post immediately.
                 </p>
-                
+
                 {/* Preview Content - Centered Layout */}
                 <div className="mb-4 flex justify-center">
                   {/* Post Preview */}
@@ -825,7 +856,7 @@ export default function PostsPage() {
                     )}
                   </div>
                 </div>
-                
+
                 <div className="flex gap-2 justify-end">
                   <Button
                     type="button"
@@ -841,14 +872,14 @@ export default function PostsPage() {
                     disabled={postingToLinkedIn}
                     onClick={async () => {
                       if (!selectedRow) return;
-                      
+
                       try {
                         setPostingToLinkedIn(true);
-                        
+
                         const supabase = createClient();
                         const { data: { session } } = await supabase.auth.getSession();
                         const token = session?.access_token;
-                        
+
                         if (!token) {
                           toast.error('Not authenticated');
                           return;
@@ -874,7 +905,7 @@ export default function PostsPage() {
                         toast.success('Posted to LinkedIn successfully!');
                         setShowLinkedInConfirm(false);
                         setSelectedRow(null);
-                        
+
                         // Refresh posts list to show updated status
                         const res = await fetch('/api/posts', {
                           headers: { Authorization: `Bearer ${token}` }
@@ -903,3 +934,20 @@ export default function PostsPage() {
 }
 
 
+// <DropdownMenu>
+//                             <DropdownMenuTrigger asChild>
+//                               <button
+//                                 type="button"
+//                                 className={`inline-flex items-center rounded-[6px] px-2 py-0.5 text-[11px] cursor-pointer hover:opacity-80 transition-opacity ${getStatusStyles(row.status || 'draft')}`}
+//                               >
+//                                 {row.status || 'draft'}
+//                               </button>
+//                             </DropdownMenuTrigger>
+//                             <DropdownMenuContent align="end">
+//                               {STATUS_OPTIONS.map(opt => (
+//                                 <DropdownMenuItem key={opt} onClick={() => handleRowSetStatus(row.id, opt)}>
+//                                   {opt}
+//                                 </DropdownMenuItem>
+//                               ))}
+//                             </DropdownMenuContent>
+//                           </DropdownMenu>

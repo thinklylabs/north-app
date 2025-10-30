@@ -163,7 +163,7 @@ async function callOpenAIExtract(system: string, user: string): Promise<Extracte
   }
 }
 
-export async function generateIdeaForRawId(rawId: number): Promise<{ inserted: boolean; ideaIds?: number[]; skippedDuplicates?: number }> {
+export async function generateIdeaForRawId(rawId: number, isFromCron?: boolean): Promise<{ inserted: boolean; ideaIds?: number[]; skippedDuplicates?: number; postsCreated?: number }> {
   const supabase = getAdminClient()
 
   const { data: raw, error: rawErr } = await supabase
@@ -247,22 +247,29 @@ export async function generateIdeaForRawId(rawId: number): Promise<{ inserted: b
       insertedIds.push(inserted.id)
     }
 
+    let postCreated = false;
     try {
       const { generateInsightForIdeaId } = await import('@/lib/insights')
       if (inserted?.id) {
         await generateInsightForIdeaId(inserted.id)
         const { runHookAndPostPipelineForIdea } = await import('@/lib/pipeline')
-        await runHookAndPostPipelineForIdea(inserted.id)
+        const pipelineResult = await runHookAndPostPipelineForIdea(inserted.id, isFromCron)
+        postCreated = pipelineResult?.postUpdated || false;
       }
     } catch (e) {
       console.error('Failed downstream pipeline for idea', inserted?.id, e)
     }
+    
+    results.push({ inserted: true, ideaId: inserted?.id, postCreated })
   }
 
+  const postsCreated = results.filter(r => r.postCreated === true).length;
+  
   return { 
     inserted: insertedIds.length > 0, 
     ideaIds: insertedIds,
-    skippedDuplicates: skippedCount
+    skippedDuplicates: skippedCount,
+    postsCreated: postsCreated
   }
 }
 

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Geist, Old_Standard_TT } from "next/font/google";
 import { useState, useRef } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { requireUser } from "@/lib/auth";
+
 import { toast } from "sonner";
 
 const oldStandard = Old_Standard_TT({ subsets: ["latin"], weight: "400" });
@@ -151,11 +151,20 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: trimmed })
       });
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Unknown error' }));
         throw new Error(err.error || 'Failed to save message');
       }
-      return await res.json();
+
+      const data = await res.json();
+
+      // Check if the message was actually saved with proper structure
+      if (!data?.message || !data.message.id) {
+        throw new Error("Message was not properly saved to the database.");
+      }
+
+      return data; 
     } finally {
       setIsSaving(false);
     }
@@ -225,22 +234,33 @@ export default function DashboardPage() {
                   aria-label="Send"
                   onClick={async () => {
                     if (!transcript.trim()) {
-                      toast.error("Please enter some text before sending!");
+                      toast.error("Thoughts can't be blank!");
                       return;
                     }
+
+                    const loadingToast = toast.loading("Processing your idea...");
+
                     try {
-                      setisProcessing(true)
-                      toast.loading("Processing your Idea");
-                      await saveMessage(transcript);
-                      toast.success("Your thought was saved successfully!");
+                      setisProcessing(true);
+                      const result = await saveMessage(transcript);
+                      
+                      console.log('Save result:', result.ideaPostSuccess); 
+
+                      if (result.ideaPostSuccess) {
+ 
+                        toast.success(`Ideas and Posts generated and saved. Check your Posts tab!`);
+                        setTranscript(''); // Only clear on full success
+
+                      } else {
+                        throw new Error("Failed to save your idea properly");
+                      }
                     } catch (e) {
-                      console.error(e);
-                      toast.error(e instanceof Error ? e.message : "Failed to save your message");
-                      // alert(e instanceof Error ? e.message : 'Failed to save');
+                      console.error('Save message error:', e);
+                      const errorMessage = e instanceof Error ? e.message : "Failed to save your message";
+                      toast.error(errorMessage);
                     } finally {
-                      setisProcessing(false)
-                      setTranscript('')
-                      toast.dismiss();
+                      setisProcessing(false);
+                      toast.dismiss(loadingToast);
                     }
                   }}
                   disabled={isSaving || isTranscribing}

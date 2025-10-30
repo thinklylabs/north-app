@@ -48,12 +48,31 @@ function isValidJSON(str: string): boolean {
   }
 }
 
-function buildHookPrompt(idea_topic: string, idea_summary: string, idea_eq?: string | null, idea_takeaway?: string | null) {
+function buildHookPrompt(
+  idea_topic: string,
+  idea_summary: string,
+  idea_eq?: string | null,
+  idea_takeaway?: string | null,
+  writingStyle?: string | null,
+  insightText?: string | null
+) {
   return [
     '# :brain: Hook Strategist (Conversion Focus, Builder Tone)',
     '',
     '## :dart: Objective',
     'Given a **`post_idea`**, generate **exactly 1 high-performing opening hook** that aligns with proven founder content patterns and drives **scroll-stopping engagement**.',
+    '',
+    '---',
+    '',
+    '## :bust_in_silhouette: User Writing Style',
+    String(writingStyle || '').trim()
+      ? String(writingStyle || '').slice(0, 1200)
+      : 'No saved writing style. Default to credible, human builder tone.',
+    '',
+    '## :bulb: RAG Insight to Consider',
+    String(insightText || '').trim()
+      ? String(insightText || '').slice(0, 1000)
+      : 'No insight found. If empty, rely on the post idea details.',
     '',
     '---',
     '',
@@ -70,10 +89,7 @@ function buildHookPrompt(idea_topic: string, idea_summary: string, idea_eq?: str
     '   For **listicles**, emphasize simplicity of structure (e.g. "3 things that…").',
     '   For **contrarian hooks**, spotlight friction against a common belief.',
     '4. Use `forward_guidance` and `critique_note` (if provided) to **refine phrasing, tone, and edge**.',
-    '5. Mirror **authentic founder tone markers**:',
-    '   - Occasional CAPS or line breaks for emphasis.',
-    '   - Second-person ("you") framing.',
-    '   - Confident "i/we" narrative voice when relevant.',
+    '5. Mirror **the user’s writing style** above when phrasing the hook (fallback: human builder tone).',
     '6. Ensure the hook ties to a **dominant topic pillar** (*creative, metrics, AI, scaling/ops*).',
     '',
     '---',
@@ -118,11 +134,35 @@ export async function generateHookForIdea(ideaId: number, isFromCron?: boolean):
   if (ideaErr) throw ideaErr
   if (!idea) throw new Error('Idea not found')
 
+  // Fetch user writing style and the most recent insight for this idea (if any)
+  const [styleResult, insightResult] = await Promise.all([
+    db
+      .from('linkedin_users')
+      .select('writing_style')
+      .eq('user_id', idea.user_id as any)
+      .maybeSingle(),
+    db
+      .from('insights')
+      .select('insight, created_at')
+      .eq('idea_id', idea.id as any)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+  ])
+
+  const writingStyle = String(styleResult.data?.writing_style || '')
+  const insightRaw = insightResult.data?.insight as any
+  const insightText = typeof insightRaw === 'object' && insightRaw !== null
+    ? String(insightRaw.insight || '')
+    : String(insightRaw || '')
+
   const prompt = buildHookPrompt(
     String(idea.idea_topic || ''), 
     String(idea.idea_summary || ''), 
     idea.idea_eq, 
-    idea.idea_takeaway
+    idea.idea_takeaway,
+    writingStyle,
+    insightText
   )
   
   const response = await claudeMessage(prompt)

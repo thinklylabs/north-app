@@ -144,19 +144,44 @@ export async function POST(req: NextRequest) {
           return { url: cleaned, ok: false, message: `db insert error: ${rawInsertError.message}` }
         }
 
-        // Fire-and-forget: process and generate ideas without blocking response
+        // Fire-and-forget: process, run extractor, then generate ideas
         ;(async () => {
           try {
             const { processRawDocument } = await import('@/lib/processRaw')
             await processRawDocument(insertedRaw.id)
           } catch (e) {
-            console.error('Failed to process substack raw document', e)
+            console.error('[substack] Failed to process raw document', e)
           }
+
           try {
-            const { generateIdeaForRawId } = await import('@/lib/ideas')
-            await generateIdeaForRawId(insertedRaw.id, true)
+            // 1) Fetch ICP context for the user
+            const admin = getSupabaseAdmin()
+            const { data: profile } = await admin
+              .from('profiles')
+              .select('icp, icp_pain_points')
+              .eq('id', user!.id)
+              .maybeSingle()
+
+            const icpText = [profile?.icp, profile?.icp_pain_points]
+              .filter(Boolean)
+              .join('\n')
+              .trim() || 'N/A'
+
+            // 2) Run extractor over the full feed text
+            const { runExtractorForLongform } = await import('@/lib/extractorAgent')
+            const extractor = await runExtractorForLongform({
+              source_type: 'substack_feeds',
+              title: 'Substack feed',
+              content: feedText,
+              icp_profile: icpText,
+            })
+            console.log('[substack] extractor themes:', extractor.themes.length)
+
+            // 3) Handoff to ideas with extractor guidance
+            const { generateIdeaForRawIdWithGuidance } = await import('@/lib/ideas')
+            await generateIdeaForRawIdWithGuidance(insertedRaw.id, extractor.guided_context_for_ideas)
           } catch (e) {
-            console.error('Failed to generate idea for substack raw document', e)
+            console.error('[substack] Failed to run extractor→ideas flow', e)
           }
         })().catch(() => {})
 

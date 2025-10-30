@@ -101,7 +101,11 @@ async function callOpenAIExtractV2(system: string, user: string): Promise<Extrac
 
   let parsed: any
   try {
-    parsed = JSON.parse(content)
+    const cleaned = String(content || '')
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/```\s*$/i, '')
+      .trim()
+    parsed = JSON.parse(cleaned)
   } catch {
     console.error('Failed to parse OpenAI response.')
     return []
@@ -163,6 +167,89 @@ async function callOpenAIExtract(system: string, user: string): Promise<Extracte
   }
 }
 
+// -- Context enrichment helpers ------------------------------------------------
+
+function parseThemesField(input: any): string[] {
+  if (!input) return []
+  if (Array.isArray(input)) return input.map(String).map(s => s.trim()).filter(Boolean).slice(0, 8)
+  if (typeof input === 'string') {
+    try {
+      const maybe = JSON.parse(input)
+      if (Array.isArray(maybe)) return maybe.map(String).map(s => s.trim()).filter(Boolean).slice(0, 8)
+    } catch {}
+    return input.split(/[;,\n]/).map(s => s.trim()).filter(Boolean).slice(0, 8)
+  }
+  if (typeof input === 'object') {
+    return Object.entries(input)
+      .filter(([, v]) => !!v)
+      .map(([k]) => String(k).trim())
+      .filter(Boolean)
+      .slice(0, 8)
+  }
+  return []
+}
+
+async function fetchUserContextForIdeas(userId: string): Promise<{ memoryText: string | null; userThemes: string[] }> {
+  const supabase = getAdminClient()
+
+  let memoryText: string | null = null
+  // {
+  //   const { data: mem } = await supabase
+  //     .from('user_long_term_memory')
+  //     .select('memory_content')
+  //     .eq('user_id', userId)
+  //     .maybeSingle()
+  //   if (mem?.memory_content) memoryText = String(mem.memory_content).slice(0, 2000)
+  // }
+
+  let userThemes: string[] = []
+  {
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('themes')
+      .eq('id', userId)
+      .maybeSingle()
+    userThemes = parseThemesField((prof as any)?.themes)
+  }
+
+  return { memoryText, userThemes }
+}
+
+function buildPromptWithContext(
+  sourceType: string,
+  title: string | null,
+  content: string,
+  opts?: { guidance?: string; memoryText?: string | null; userThemes?: string[] }
+): { system: string; user: string } {
+  const base = buildPromptV2(sourceType, title, content)
+  const sections: string[] = []
+
+  const memoryLen = opts?.memoryText ? opts.memoryText.length : 0
+  const themeCount = (opts?.userThemes || []).length
+  const hasGuidance = !!(opts?.guidance && opts.guidance.trim())
+
+  console.log('[ideas] prompt context:', {
+    sourceType,
+    title: title || null,
+    hasGuidance,
+    memoryLen,
+    themeCount,
+  })
+
+  if (opts?.memoryText) {
+    sections.push(`Long-term user context:\n${opts.memoryText}\n`)
+  }
+  if (opts?.userThemes && opts.userThemes.length) {
+    sections.push(`User themes:\n${opts.userThemes.map(t => `- ${t}`).join('\n')}\n`)
+  }
+  if (opts?.guidance) {
+    sections.push(`Guidance from extractor:\n${opts.guidance}\n\n---\n`)
+  }
+
+  const user = sections.length ? `${sections.join('\n')}${base.user}` : base.user
+  return { system: base.system, user }
+}
+
 export async function generateIdeaForRawId(rawId: number, isFromCron?: boolean): Promise<{ inserted: boolean; ideaIds?: number[]; skippedDuplicates?: number }> {
   const supabase = getAdminClient()
 
@@ -182,7 +269,150 @@ export async function generateIdeaForRawId(rawId: number, isFromCron?: boolean):
   if (srcErr) throw srcErr
   if (!source) throw new Error('content_source not found')
 
-  const { system, user } = buildPromptV2(String(source.source_type || ''), raw.title || null, String(raw.content || ''))
+  const ctx = await fetchUserContextForIdeas(String(source.user_id || ''))
+  const { system, user } = buildPromptWithContext(
+    String(source.source_type || ''),
+    raw.title || null,
+    String(raw.content || ''),
+    { memoryText: ctx.memoryText, userThemes: ctx.userThemes }
+  )
+  console.log('[ideas] sending for generation (no-guidance)', {
+    rawId: raw.id,
+    userId: source.user_id,
+    sourceType: source.source_type,
+    userLen: user.length,
+  })
+
+  let ideas: ExtractedIdea[] = []
+  try {
+    ideas = await callOpenAIExtractV2(system, user)
+  } catch (e) {
+    console.error('OpenAI extract failed', e)
+    return { inserted: false }
+  }
+
+  if (!ideas.length) {
+    console.error('⚠️ No ideas extracted — parser returned empty array.')
+    return { inserted: false }
+  }
+
+  const results: any[] = []
+  const insertedIds: number[] = []
+  let skippedCount = 0
+
+  for (const idea of ideas) {
+    const signature = await computeDedupeSignature(idea.idea_topic, idea.idea_takeaway || '')
+
+    const { data: existing } = await supabase
+      .from('ideas')
+      .select('id')
+      .eq('user_id', source.user_id)
+      .eq('dedupe_signature', signature)
+      .is('deleted_at', null)
+      .maybeSingle()
+
+    if (existing) {
+      results.push({ skippedDuplicate: true })
+      skippedCount++
+      continue
+    }
+
+    const insertRow = {
+      user_id: source.user_id,
+      source_id: source.id,
+      raw_id: raw.id,
+      source_type: source.source_type,
+      idea_topic: idea.idea_topic,
+      idea_summary: idea.idea_summary,
+      idea_eq: idea.idea_eq || null,
+      idea_takeaway: idea.idea_takeaway || null,
+      dedupe_signature: signature,
+    }
+
+    console.log('🧠 Inserting idea:', insertRow)
+    const { data: inserted, error: insErr } = await supabase
+      .from('ideas')
+      .insert(insertRow)
+      .select('id')
+      .single()
+
+    if (insErr) {
+      console.error('❌ Supabase insert error:', insErr)
+      continue
+    }
+
+    results.push({ inserted: true, ideaId: inserted?.id })
+    if (inserted?.id) {
+      insertedIds.push(inserted.id)
+    }
+
+    try {
+      const { generateInsightForIdeaId } = await import('@/lib/insights')
+      if (inserted?.id) {
+        await generateInsightForIdeaId(inserted.id)
+        const { runHookAndPostPipelineForIdea } = await import('@/lib/pipeline')
+        await runHookAndPostPipelineForIdea(inserted.id)
+      }
+    } catch (e) {
+      console.error('Failed downstream pipeline for idea', inserted?.id, e)
+    }
+  }
+
+  return { 
+    inserted: insertedIds.length > 0, 
+    ideaIds: insertedIds,
+    skippedDuplicates: skippedCount
+  }
+}
+
+function buildPromptWithGuidance(
+  sourceType: string,
+  title: string | null,
+  content: string,
+  guidance?: string
+): { system: string; user: string } {
+  const base = buildPromptV2(sourceType, title, content)
+  const user = guidance
+    ? `Guidance from extractor:\n${guidance}\n\n---\n\n${base.user}`
+    : base.user
+  return { system: base.system, user }
+}
+
+export async function generateIdeaForRawIdWithGuidance(
+  rawId: number,
+  guidance: string
+): Promise<{ inserted: boolean; ideaIds?: number[]; skippedDuplicates?: number }> {
+  const supabase = getAdminClient()
+
+  const { data: raw, error: rawErr } = await supabase
+    .from('raw_content')
+    .select('id, source_id, title, content, created_at')
+    .eq('id', rawId)
+    .maybeSingle()
+  if (rawErr) throw rawErr
+  if (!raw) throw new Error('raw_content not found')
+
+  const { data: source, error: srcErr } = await supabase
+    .from('content_sources')
+    .select('id, user_id, source_type')
+    .eq('id', raw.source_id)
+    .maybeSingle()
+  if (srcErr) throw srcErr
+  if (!source) throw new Error('content_source not found')
+
+  const ctx = await fetchUserContextForIdeas(String(source.user_id || ''))
+  const { system, user } = buildPromptWithContext(
+    String(source.source_type || ''),
+    raw.title || null,
+    String(raw.content || ''),
+    { guidance, memoryText: ctx.memoryText, userThemes: ctx.userThemes }
+  )
+  console.log('[ideas] sending for generation (with-guidance)', {
+    rawId: raw.id,
+    userId: source.user_id,
+    sourceType: source.source_type,
+    userLen: user.length,
+  })
 
   let ideas: ExtractedIdea[] = []
   try {
@@ -259,8 +489,8 @@ export async function generateIdeaForRawId(rawId: number, isFromCron?: boolean):
     }
   }
 
-  return { 
-    inserted: insertedIds.length > 0, 
+  return {
+    inserted: insertedIds.length > 0,
     ideaIds: insertedIds,
     skippedDuplicates: skippedCount
   }

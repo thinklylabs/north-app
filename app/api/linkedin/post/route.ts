@@ -166,6 +166,9 @@ export async function POST(req: NextRequest) {
         : postContent;
 
       const emailPayload = {
+        from: `LinkedIn Bot <${process.env.ADMIN_EMAIL}>`,
+        to: 'ansh.shetty.22@gmail.com',
+        subject: `🚀 New LinkedIn Post Published - ${userName}`,
         from: `North Update <${process.env.ADMIN_EMAIL}>`,
         to: `ansh.shetty.22@gmail.com`,
         subject: ` ${userName} posted on LinkedIn!`,

@@ -175,13 +175,40 @@ function isValidJSON(str: string): boolean {
   }
 }
 
-function buildPostPrompt(idea_topic: string, idea_summary: string, idea_eq: string, idea_takeaway: string, hook: string, insight: any) {
+function buildPostPrompt(
+  idea_topic: string,
+  idea_summary: string,
+  idea_eq: string,
+  idea_takeaway: string,
+  hook: string,
+  insight: any,
+  writingStyle: string,
+  onboardingSummary: string,
+  longTermContext: string
+) {
   return [
     '# 🧱 Post Curator (Builder Tone, Founder Voice)',
     '',
     '## 🎯 Objective',
-    'Turn **`post_idea`** (and optionally RAG insights + hook) into **1 polished, LinkedIn-ready draft (160–180 words)**.',
-    'The draft should sound like a founder writing in public — **structured, specific, but human.**',
+    'Turn **`post_idea`** (with RAG insights + hook + user context) into **1 polished, LinkedIn-ready draft (160–180 words)**.',
+    'Sound like the user — **structured, specific, human**.',
+    '',
+    '---',
+    '',
+    '## ✍️ User Writing Style (mirror this)',
+    String(writingStyle || '').trim()
+      ? String(writingStyle || '').slice(0, 1200)
+      : 'No saved writing style. Default to credible, human builder tone.',
+    '',
+    '## 🧭 Onboarding Summary',
+    String(onboardingSummary || '').trim()
+      ? String(onboardingSummary || '').slice(0, 1000)
+      : 'No onboarding summary provided.',
+    '',
+    '## 🧠 Long-term User Context (use selectively for specificity)',
+    String(longTermContext || '').trim()
+      ? String(longTermContext || '').slice(0, 2000)
+      : 'No long-term memory available.',
     '',
     '---',
     '',
@@ -247,6 +274,7 @@ function buildPostPrompt(idea_topic: string, idea_summary: string, idea_eq: stri
     '- Hook should be 1 sentence, scroll-stopping, and clear.',
     '',
     '### ✍️ Writing Style',
+    '- Mirror the user style block above when possible.',
     '- Short paragraphs (1–3 lines each).',
     '- Use **→** or bullets for clarity if it fits naturally.',
     '- Second-person voice ("you", "your") for connection.',
@@ -264,7 +292,8 @@ function buildPostPrompt(idea_topic: string, idea_summary: string, idea_eq: stri
     '3. Use **Hook Strategist output** if available — else derive naturally.',
     '4. Write **naturally**, not mechanically — no template headers or robotic transitions.',
     '5. Embed **RAG insights conversationally** (facts, frameworks, or examples).',
-    '6. Ensure the post feels **authentic** and **specific** — no generic AI phrasing.',
+    '6. Use onboarding summary and long-term context to ground specifics (names, processes, constraints).',
+    '7. Ensure the post feels **authentic** and **specific** — no generic AI phrasing.',
     '',
     '### ⚙️ Hard Rules',
     '- Exactly **1 draft**, **160–180 words**.',
@@ -329,13 +358,39 @@ export async function generatePostFromHookAndInsight(ideaId: number, insightId: 
   if (insErr) throw insErr
   if (!insight) throw new Error('Insight not found')
 
+  // Fetch writing style, onboarding summary, and long-term memory (if available)
+  const [styleRes, profileRes, memoryRes] = await Promise.all([
+    db
+      .from('linkedin_users')
+      .select('writing_style')
+      .eq('user_id', post.user_id as any)
+      .maybeSingle(),
+    db
+      .from('profiles')
+      .select('onboarding_summary')
+      .eq('id', post.user_id as any)
+      .maybeSingle(),
+    db
+      .from('user_long_term_memory')
+      .select('memory_content')
+      .eq('user_id', post.user_id as any)
+      .maybeSingle()
+  ])
+
+  const writingStyle = String(styleRes.data?.writing_style || '')
+  const onboardingSummary = String(profileRes.data?.onboarding_summary || '')
+  const longTermContext = String(memoryRes.data?.memory_content || '')
+
   const prompt = buildPostPrompt(
     String(idea.idea_topic || ''),
     String(idea.idea_summary || ''),
     String(idea.idea_eq || ''),
     String(idea.idea_takeaway || ''),
     String(post.post_hook || ''),
-    insight.insight
+    insight.insight,
+    writingStyle,
+    onboardingSummary,
+    longTermContext.slice(0, 2000)
   )
   
   const response = await claudeMessage(prompt)

@@ -380,7 +380,8 @@ function buildPromptWithGuidance(
 
 export async function generateIdeaForRawIdWithGuidance(
   rawId: number,
-  guidance: string
+  guidance: string,
+  isFromCron?: boolean
 ): Promise<{ inserted: boolean; ideaIds?: number[]; skippedDuplicates?: number }> {
   const supabase = getAdminClient()
 

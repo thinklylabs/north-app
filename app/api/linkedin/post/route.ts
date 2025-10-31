@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { postId, imageData } = await req.json();
-    
+
     if (!postId) {
       return NextResponse.json({ error: "Post ID is required" }, { status: 400 });
     }
@@ -58,90 +58,61 @@ export async function POST(req: NextRequest) {
     // Unipile API call
     const baseUrl = (process.env.UNIPILE_DSN || "").replace(/\/$/, "");
     const apiToken = process.env.UNIPILE_TOKEN;
-    
+
     if (!baseUrl || !apiToken) {
       return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
     }
 
-    const postData: any = {
-      provider: "LINKEDIN",
-      account_id: linkedinUser.account_id,
-      text: post.post_content || post.post_hook,
-    };
+    // const postData: any = {
+    //   provider: "LINKEDIN",
+    //   account_id: linkedinUser.account_id,
+    //   text: post.post_content || post.post_hook,
+    // };
 
-    // Handle image - try different approaches
-    if (imageData) {
-      try {
-        let imageUrl = null;
-        
-        // First, ensure we have a public URL
-        if (imageData.startsWith('http')) {
-          // Already uploaded to Supabase, use the URL directly
-          imageUrl = imageData;
-          console.log("[linkedin/post] Using already uploaded image:", imageUrl);
-        } else {
-          // Base64 data, need to upload to Supabase first
-          console.log("[linkedin/post] Uploading image to Supabase storage...");
-          const uploadResponse = await fetch('/api/upload-linkedin-image', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
-            },
-            body: JSON.stringify({ imageData })
-          });
-          
-          if (uploadResponse.ok) {
-            const uploadResult = await uploadResponse.json();
-            imageUrl = uploadResult.imageUrl;
-            console.log("[linkedin/post] Image uploaded to Supabase:", imageUrl);
-          } else {
-            console.error("[linkedin/post] Supabase upload failed:", await uploadResponse.text());
-            throw new Error("Failed to upload image to Supabase");
-          }
-        }
-        
-        // Add image using media field (correct format for Unipile)
-        if (imageUrl) {
-          console.log("[linkedin/post] Adding image URL to post data:", imageUrl);
-          
-          // Use media field for image attachment
-          postData.media = [{
-            type: "image",
-            url: imageUrl
-          }];
-          
-          console.log("[linkedin/post] Added image to media field");
-        }
-      } catch (error) {
-        console.error("[linkedin/post] Image processing error:", error);
-        return NextResponse.json({ 
-          error: `Failed to process image: ${error instanceof Error ? error.message : String(error)}` 
-        }, { status: 500 });
-      }
-    }
+   
+    // // Handle image - directly attach Base64 data for immediate posting
+    // if (imageData) {
+    //   try {
+    //     console.log("[linkedin/post] Attaching Base64 image directly to Unipile payload");
+    //     postData.media = [
+    //       {
+    //         type: "image",
+    //         data: imageData, // raw Base64 string
+    //       },
+    //     ];
+    //   } catch (error) {
+    //     console.error("[linkedin/post] Image processing error:", error);
+    //     return NextResponse.json(
+    //       { error: `Failed to attach image: ${error instanceof Error ? error.message : String(error)}` },
+    //       { status: 500 }
+    //     );
+    //   }
+    // }
 
-    console.log("[linkedin/post] Posting to Unipile with data:", postData);
-    console.log("[linkedin/post] Unipile URL:", `${baseUrl}/api/v1/posts`);
-    console.log("[linkedin/post] Has image:", !!imageData);
-    console.log("[linkedin/post] Post data structure:", JSON.stringify(postData, null, 2));
+const formData = new FormData();
+formData.append("account_id", linkedinUser.account_id);
+formData.append("text", post.post_content || post.post_hook);
 
-    const response = await fetch(`${baseUrl}/api/v1/posts`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-API-KEY": apiToken,
-      },
-      body: JSON.stringify(postData),
-    });
+if (imageData) {
+  const base64 = imageData.split(",")[1];
+  const binary = Buffer.from(base64, "base64");
+  const blob = new Blob([binary], { type: "image/jpeg" });
+  formData.append("attachments", blob, "post-image.jpg");
+}
+
+const response = await fetch(`${baseUrl}/api/v1/posts`, {
+  method: "POST",
+  headers: { "X-API-KEY": apiToken },
+  body: formData,
+});
 
     console.log("[linkedin/post] Unipile response status:", response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[linkedin/post] Unipile error response:", errorText);
-      return NextResponse.json({ 
-        error: `LinkedIn posting failed: ${response.status} ${errorText}` 
+      return NextResponse.json({
+        error: `LinkedIn posting failed: ${response.status} ${errorText}`
       }, { status: 500 });
     }
 
@@ -159,11 +130,17 @@ export async function POST(req: NextRequest) {
       // Don't fail the request since LinkedIn posting succeeded
     }
 
+    // console.log("[linkedin/post] Posting to Unipile with data:", postData);
+    // console.log("[linkedin/post] Unipile URL:", `${baseUrl}/api/v1/posts`);
+    // console.log("[linkedin/post] Has image:", !!imageData);
+    // console.log("[linkedin/post] Post data structure:", JSON.stringify(postData, null, 2));
+
+
     // Send email notification to admin after successful LinkedIn posting
     // This is wrapped in try-catch so email failures don't affect the posting success
     try {
       console.log('📧 Attempting to send LinkedIn post notification email...');
-      
+
       if (!process.env.RESEND_API_KEY) {
         throw new Error('RESEND_API_KEY not configured');
       }
@@ -176,20 +153,20 @@ export async function POST(req: NextRequest) {
         .single();
 
       const userEmail = user?.email || 'Unknown User';
-      const userName = userProfile?.first_name && userProfile?.last_name 
+      const userName = userProfile?.first_name && userProfile?.last_name
         ? `${userProfile.first_name} ${userProfile.last_name}`
         : userProfile?.first_name || user?.email || 'No Name Provided';
       const companyName = userProfile?.company_name || 'No Company';
 
       // Truncate post content for email (first 200 characters)
       const postContent = post.post_content || post.post_hook || 'No content';
-      const truncatedContent = postContent.length > 200 
-        ? postContent.substring(0, 200) + '...' 
+      const truncatedContent = postContent.length > 200
+        ? postContent.substring(0, 200) + '...'
         : postContent;
 
       const emailPayload = {
-        from: 'LinkedIn Bot <onboarding@resend.dev>',
-        to: 'ansh.shetty.22@gmail.com',
+        from: `LinkedIn Update Bot <${process.env.ADMIN_EMAIL}>`,
+        to: userEmail,
         subject: `🚀 New LinkedIn Post Published - ${userName}`,
         html: `
           <h2>🚀 New LinkedIn Post Published</h2>
@@ -213,9 +190,9 @@ export async function POST(req: NextRequest) {
           </p>
         `,
       };
-      
+
       console.log('📤 Sending LinkedIn post notification email...');
-      
+
       const sendResult = await resend.emails.send(emailPayload);
 
       console.log('✅ LinkedIn post notification email sent successfully:', sendResult);

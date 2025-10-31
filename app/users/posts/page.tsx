@@ -52,6 +52,21 @@ export default function PostsPage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [dateFilter, setDateFilter] = useState<string>('');
+  const [imageData, setImageData] = useState<string | null>(null);
+  // const [selectedImage, setSelectedImage] = useState(null);
+  const [postToPublish, setPostToPublish] = useState<PostRow | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // const toBase64 = (file: Blob) =>
+  //   new Promise((resolve, reject) => {
+  //     const reader = new FileReader();
+  //     reader.onload = () => resolve(reader.result);
+  //     reader.onerror = reject;
+  //     reader.readAsDataURL(file);
+  //   });
+
+
   const itemsPerPage = 10;
 
   const STATUS_OPTIONS = [
@@ -224,7 +239,7 @@ export default function PostsPage() {
       toast.success('Status updated');
     } catch {
       toast.error('Failed to update status');
-    }
+    } ``
   };
 
   const handleBulkSetStatus = async (newStatus: string) => {
@@ -243,6 +258,31 @@ export default function PostsPage() {
       toast.success(`Updated ${selectedPosts.size} post(s)`);
     } catch {
       toast.error('Failed to update statuses');
+    }
+  };
+
+  const handleAddImage = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setImageData(base64);
+      localStorage.setItem("linkedinImage", base64); // cache temporarily
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setImageData(null);
+    localStorage.removeItem("linkedinImage");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""; // reset the file input so user can re-upload same file
     }
   };
 
@@ -798,8 +838,11 @@ export default function PostsPage() {
                   type="button"
                   className="h-[30px] px-3 rounded-[6px] bg-[#0077B5] text-white hover:bg-[#005885] text-[12px] cursor-pointer flex items-center gap-2"
                   disabled={postingToLinkedIn}
-                  onClick={() => setShowLinkedInConfirm(true)}
-                >
+                  onClick={() => {
+                    setPostToPublish(selectedRow)
+                    setShowLinkedInConfirm(true)
+                  }
+                  }>
                   {!postingToLinkedIn && (
                     <img
                       src="/linkedin.svg"
@@ -847,7 +890,7 @@ export default function PostsPage() {
                   <div className="w-full max-w-2xl p-4 bg-[#F6F2EC] rounded-[8px] border-[#171717]/10">
                     <p className="text-[12px] text-[#6F7777] mb-2 font-medium">Post Preview:</p>
                     <div className="text-[13px] text-[#0D1717] leading-[1.4] whitespace-pre-wrap max-h-[120px] overflow-y-auto">
-                      {editContent || selectedRow?.post_content || 'No content'}
+                      {editContent || postToPublish?.post_content || 'No content'}
                     </div>
                     {editHook && (
                       <div className="mt-2 text-[12px] text-[#6F7777]">
@@ -866,12 +909,73 @@ export default function PostsPage() {
                   >
                     Cancel
                   </Button>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-[30px] px-3 rounded-[6px] border-[#171717]/20 border-[0.5px] bg-[#3EAD85] text-[#0D1717] hover:bg-[#EDE8E1] text-[12px] cursor-pointer"
+                      onClick={handleAddImage}
+                    >
+                      Add Image +
+                    </Button>
+
+
+{/* <Button
+  type="button"
+  variant="ghost"
+  className="h-[30px] px-3 rounded-[6px] border-[#171717]/20 border-[0.5px] bg-[#3EAD85] text-[#0D1717] hover:bg-[#EDE8E1] text-[12px] cursor-pointer"
+  onClick={() => fileInputRef.current?.click()}
+>
+  Add Image +
+</Button> */}
+
+
+
+
+                    {/* <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      ref={fileInputRef}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const base64 = await toBase64(file);
+                        setSelectedImage(base64);
+                        console.log("Image selected!");
+                      }}
+                    /> */}
+
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      style={{ display: "none" }}
+                    />
+
+                    {imageData && (
+                      <img
+                        src={imageData}
+                        alt="Preview"
+                        className="mt-2 rounded-md w-32 h-32 object-cover"
+                      />
+                    )}
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="text-[12px] text-red-600 border-red-300 hover:bg-red-50"
+                      onClick={handleRemoveImage}>Clear Image</Button>
+                  </div>
                   <Button
                     type="button"
                     className="h-[30px] px-3 rounded-[6px] bg-[#0077B5] text-white hover:bg-[#005885] text-[12px] cursor-pointer"
                     disabled={postingToLinkedIn}
                     onClick={async () => {
-                      if (!selectedRow) return;
+                      console.log("Button Clicked")
+                      console.log("Selected Row", postToPublish)
+                      if (!postToPublish) return;
 
                       try {
                         setPostingToLinkedIn(true);
@@ -885,6 +989,9 @@ export default function PostsPage() {
                           return;
                         }
 
+                        const imageData = localStorage.getItem("linkedinImage");
+
+
                         const response = await fetch('/api/linkedin/post', {
                           method: 'POST',
                           headers: {
@@ -892,8 +999,8 @@ export default function PostsPage() {
                             'Authorization': `Bearer ${token}`
                           },
                           body: JSON.stringify({
-                            postId: selectedRow.id,
-                            imageData: null // No image upload functionality
+                            postId: postToPublish.id,
+                            imageData: imageData || null
                           })
                         });
 
@@ -932,22 +1039,3 @@ export default function PostsPage() {
     </div>
   );
 }
-
-
-// <DropdownMenu>
-//                             <DropdownMenuTrigger asChild>
-//                               <button
-//                                 type="button"
-//                                 className={`inline-flex items-center rounded-[6px] px-2 py-0.5 text-[11px] cursor-pointer hover:opacity-80 transition-opacity ${getStatusStyles(row.status || 'draft')}`}
-//                               >
-//                                 {row.status || 'draft'}
-//                               </button>
-//                             </DropdownMenuTrigger>
-//                             <DropdownMenuContent align="end">
-//                               {STATUS_OPTIONS.map(opt => (
-//                                 <DropdownMenuItem key={opt} onClick={() => handleRowSetStatus(row.id, opt)}>
-//                                   {opt}
-//                                 </DropdownMenuItem>
-//                               ))}
-//                             </DropdownMenuContent>
-//                           </DropdownMenu>
